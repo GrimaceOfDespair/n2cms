@@ -10,6 +10,7 @@ using N2.Definitions;
 using N2.Details;
 using N2.Edit;
 using System.Security.Principal;
+using N2.Definitions.Static;
 
 namespace N2.Management.Content.Templates
 {
@@ -19,14 +20,14 @@ namespace N2.Management.Content.Templates
 		public const string TemplateDescription = "TemplateDescription";
 
 		IPersister persister;
+		DefinitionMap map;
 		ContainerRepository<TemplateContainer> container;
-		IDefinitionManager definitions;
 
-		public ContentTemplateRepository(IPersister persister, ContainerRepository<TemplateContainer> container, IDefinitionManager definitions)
+		public ContentTemplateRepository(IPersister persister, DefinitionMap map, ContainerRepository<TemplateContainer> container)
 		{
 			this.persister = persister;
+			this.map = map;
 			this.container = container;
-			this.definitions = definitions;
 		}
 
 		#region ITemplateRepository Members
@@ -43,22 +44,24 @@ namespace N2.Management.Content.Templates
 
 		private TemplateDefinition CreateTemplateInfo(ContentItem template)
 		{
-			var clone = template.Clone(true);
-			clone.SetDetail(TemplateDescription, null, typeof(string));
-			clone.Title = "";
-			clone.Name = null;
-			clone["TemplateName"] = template.Name;
 			var info = new TemplateDefinition
 			{
 				Name = template.Name,
 				Title = template.Title,
 				Description = template.GetDetail(TemplateDescription, ""),
 				TemplateUrl = template.Url,
-				Definition = definitions.GetDefinition(template).Clone(),
-				Template = clone,
-				Original = template
+				Definition = map.GetOrCreateDefinition(template.GetContentType(), template.Name),
+				Template = () =>
+				{
+					var clone = template.Clone(true);
+					clone.SetDetail(TemplateDescription, null, typeof(string));
+					clone.Title = "";
+					clone.Name = null;
+					clone["TemplateName"] = template.Name;
+					return clone;
+				},
+				Original = () => template
 			};
-			info.Definition.Template = template.Name;
 			return info;
 		}
 
@@ -78,9 +81,9 @@ namespace N2.Management.Content.Templates
 		{
 			foreach(var template in GetAllTemplates())
 			{
-				if (template.Template.GetContentType() != contentType)
+				if (template.Definition.ItemType != contentType)
 					continue;
-				if (!template.Template.IsAuthorized(user))
+				if (!template.Template().IsAuthorized(user))
 					continue;
 
 				yield return template;

@@ -108,7 +108,6 @@ namespace N2.Web.UI.WebControls
 					ContentItem parentItem = Engine.Resolve<Navigator>().Navigate(HttpUtility.UrlDecode(ParentPath));
 					currentItem = Engine.Resolve<ContentActivator>().CreateInstance(CurrentItemType, parentItem);
 					currentItem.ZoneName = ZoneName;
-					ApplyContentModifications(ContentState.New);
 				}
 				return currentItem;
 			}
@@ -117,7 +116,7 @@ namespace N2.Web.UI.WebControls
 				currentItem = value;
 				if (value != null)
 				{
-					Definition = Engine.Container.ResolveAll<ITemplateProvider>().GetDefinition(value);
+					Definition = Engine.Definitions.GetDefinition(value);
 					Discriminator = Definition.Discriminator;
 					if (value.VersionOf != null && value.ID == 0)
 						VersioningMode = ItemEditorVersioningMode.SaveOnly;
@@ -129,12 +128,6 @@ namespace N2.Web.UI.WebControls
 					Discriminator = null;
 				}
 			}
-		}
-
-		public void ApplyContentModifications(ContentState changingTo)
-		{
-			foreach (var d in GetDefinition().ContentModifiers.Where(cm => (cm.ChangingTo & changingTo) == changingTo))
-				d.Modify(currentItem);
 		}
 
 		/// <summary>Gets or sets the zone name that the edited item will be set to.</summary>

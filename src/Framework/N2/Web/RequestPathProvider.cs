@@ -15,14 +15,13 @@ namespace N2.Web
 	{
 		private readonly IWebContext webContext;
 		private readonly IUrlParser parser;
-		private readonly IErrorHandler errorHandler;
+		private readonly IErrorNotifier errorHandler;
 		private readonly bool rewriteEmptyExtension = true;
 		private readonly bool observeAllExtensions = true;
 		private readonly string[] observedExtensions = new[] {".aspx"};
 		private readonly string[] nonRewritablePaths;
 
-		public RequestPathProvider(IWebContext webContext, IUrlParser parser, 
-			IErrorHandler errorHandler, HostSection config)
+		public RequestPathProvider(IWebContext webContext, IUrlParser parser, IErrorNotifier errorHandler, HostSection config)
 		{
 			this.webContext = webContext;
 			this.parser = parser;
@@ -53,17 +52,24 @@ namespace N2.Web
 			return data;
 		}
 
-		public virtual PathData ResolveUrl(string url)
+		public virtual PathData ResolveUrl(Url url)
 		{
 			try
 			{
-				if (IsObservable(url)) return parser.ResolvePath(url);
+				if (IsObservable(url))
+					return parser.ResolvePath(url.RemoveDefaultDocument(Url.DefaultDocument).RemoveExtension(observedExtensions));
 			}
 			catch (Exception ex)
 			{
 				errorHandler.Notify(ex);
 			}
 			return PathData.Empty;
+		}
+
+		[Obsolete("Use ResolveUrl((Url)url))")]
+		public virtual PathData ResolveUrl(string url)
+		{
+			return ResolveUrl(new Url(url));
 		}
 
 		private bool IsObservable(Url url)

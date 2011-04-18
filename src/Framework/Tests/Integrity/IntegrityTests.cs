@@ -16,6 +16,7 @@ using N2.Tests.Fakes;
 using System.Linq;
 using N2.Persistence.Proxying;
 using N2.Definitions.Static;
+using N2.Edit.Workflow;
 
 namespace N2.Tests.Integrity
 {
@@ -46,12 +47,13 @@ namespace N2.Tests.Integrity
 			parser = mocks.StrictMock<IUrlParser>();
 
 			ITypeFinder typeFinder = CreateTypeFinder();
-			DefinitionBuilder builder = new DefinitionBuilder(typeFinder, new EngineSection());
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection());
 			IItemNotifier notifier = mocks.DynamicMock<IItemNotifier>();
 			mocks.Replay(notifier);
-			activator = new ContentActivator(new N2.Edit.Workflow.StateChanger(), notifier, new EmptyProxyFactory());
-			definitions = new DefinitionManager(new [] {new DefinitionProvider(builder)}, activator);
-			finder = new FakeItemFinder(definitions, () => Enumerable.Empty<ContentItem>());
+			var changer = new N2.Edit.Workflow.StateChanger();
+			activator = new ContentActivator(changer, notifier, new EmptyProxyFactory());
+			definitions = new DefinitionManager(new[] { new DefinitionProvider(builder) }, new ITemplateProvider[0], activator, changer);
+			finder = new FakeItemFinder(() => Enumerable.Empty<ContentItem>());
 			integrityManger = new IntegrityManager(definitions, finder, parser);
 			IntegrityEnforcer enforcer = new IntegrityEnforcer(persister, integrityManger, activator);
 			enforcer.Start();

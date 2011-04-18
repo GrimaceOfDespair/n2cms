@@ -84,19 +84,19 @@ namespace N2.Persistence.NH
 			get { return List.ToList(); }
 		}
 
-		public T this[string key]
+		public T this[string name]
 		{
 			get
 			{
-				return FindNamed(key);
+				return FindNamed(name);
 			}
 			set
 			{
-				EnsureName(key, value);
+				EnsureName(name, value);
 
-				var result = List.Select((item, index) => new { item, index }).FirstOrDefault(i => i.item.Name == key);
+				var result = List.Select((item, index) => new { item, index }).FirstOrDefault(i => i.item.Name == name);
 				if (result == null)
-					Add(key, value);
+					Add(name, value);
 				else
 					this[result.index] = value;
 			}
@@ -104,9 +104,9 @@ namespace N2.Persistence.NH
 
 		public T FindNamed(string name)
 		{
-			if (WasInitialized) return List.FirstOrDefault(i => i.Name == name);
+			if (WasInitialized) return List.FirstOrDefault(i => string.Equals(i.Name, name, StringComparison.InvariantCultureIgnoreCase));
 
-			return ((ISession)Session).CreateFilter(this, "where Name=:name").SetParameter("name", name).UniqueResult<T>();
+			return ((ISession)Session).CreateFilter(this, "where Name like :name").SetParameter("name", name).UniqueResult<T>();
 		}
 
 		#endregion

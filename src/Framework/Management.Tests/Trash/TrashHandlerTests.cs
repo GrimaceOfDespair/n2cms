@@ -16,6 +16,7 @@ using N2.Configuration;
 using N2.Engine;
 using N2.Engine.Globalization;
 using N2.Edit.Workflow;
+using N2.Edit.Installation;
 
 namespace N2.Edit.Tests.Trash
 {
@@ -33,7 +34,7 @@ namespace N2.Edit.Tests.Trash
 		    
             mocks.ReplayAll();
 
-			TrashHandler th = new TrashHandler(persister, null, null, new ContainerRepository<TrashContainerItem>(persister, null, host, activator)) { UseNavigationMode = true };
+			TrashHandler th = new TrashHandler(persister, null, null, new ContainerRepository<TrashContainerItem>(persister, null, host, activator), new StateChanger()) { UseNavigationMode = true };
             th.Throw(item);
 
             Assert.AreEqual(trash, item.Parent);
@@ -106,7 +107,7 @@ namespace N2.Edit.Tests.Trash
         [Test]
         public void Throwing_IsIntercepted_InMediumTrust()
         {
-			IEngine engine = new ContentEngine(new MediumTrustServiceContainer(), EventBroker.Instance, new ContainerConfigurer());
+			IEngine engine = new ContentEngine(new MediumTrustServiceContainer(), new EventBroker(), new ContainerConfigurer());
 			engine.Initialize();
 
 			var schemaCreator = new SchemaExport(engine.Resolve<IConfigurationBuilder>().BuildConfiguration());
@@ -116,7 +117,7 @@ namespace N2.Edit.Tests.Trash
             engine.SecurityManager.Enabled = false;
 
             ContentItem root = new ThrowableItem();
-            root.Name = "root";
+            root.Name = "root_mediumtrust";
 
             ContentItem item = new ThrowableItem();
             item.Name = "bin's destiny";
@@ -145,7 +146,7 @@ namespace N2.Edit.Tests.Trash
             mocks.ReplayAll();
 
 			var host = new Host(webContext, 1, 1);
-			TrashHandler th = new TrashHandler(persister, null, null, new ContainerRepository<TrashContainerItem>(persister, null, host, activator)) { UseNavigationMode = true };
+			TrashHandler th = new TrashHandler(persister, null, null, new ContainerRepository<TrashContainerItem>(persister, null, host, activator), new StateChanger()) { UseNavigationMode = true };
 
             bool throwingWasInvoked = false;
             bool throwedWasInvoked = false;
@@ -171,7 +172,7 @@ namespace N2.Edit.Tests.Trash
             mocks.ReplayAll();
 
 			var host = new Host(webContext, 1, 1);
-			TrashHandler th = new TrashHandler(persister, null, null, new ContainerRepository<TrashContainerItem>(persister, null, host, null)) { UseNavigationMode = true };
+			TrashHandler th = new TrashHandler(persister, null, null, new ContainerRepository<TrashContainerItem>(persister, null, host, null), new StateChanger()) { UseNavigationMode = true };
 
             th.ItemThrowing += delegate(object sender, CancellableItemEventArgs args) { args.Cancel = true; };
             th.Throw(item);
@@ -214,7 +215,7 @@ namespace N2.Edit.Tests.Trash
 			
             mocks.ReplayAll();
 
-			return new TrashHandler(persister, null, null, new ContainerRepository<TrashContainerItem>(persister, null, host, activator)) { UseNavigationMode = true };
+			return new TrashHandler(persister, null, null, new ContainerRepository<TrashContainerItem>(persister, null, host, activator), new StateChanger()) { UseNavigationMode = true };
         }
 
         private IPersister MockPersister(ContentItem root, ContentItem trash, ContentItem item)

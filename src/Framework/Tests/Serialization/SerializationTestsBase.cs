@@ -10,6 +10,7 @@ using N2.Web;
 using Rhino.Mocks;
 using N2.Persistence.Proxying;
 using N2.Definitions.Static;
+using N2.Edit.Workflow;
 
 namespace N2.Tests.Serialization
 {
@@ -34,10 +35,11 @@ namespace N2.Tests.Serialization
 
 			activator = new ContentActivator(new N2.Edit.Workflow.StateChanger(), notifier, new InterceptingProxyFactory());
 			definitions = new DefinitionManager(
-				new [] {new DefinitionProvider(new DefinitionBuilder(
+				new[] {new DefinitionProvider(new DefinitionBuilder(new DefinitionMap(), 
 					finder, 
 					new EngineSection()))}, 
-				activator);
+				new ITemplateProvider[0],
+				activator, new StateChanger());
 			definitions.Start();
 			parser = mocks.StrictMock<IUrlParser>();
 			Expect.On(parser)

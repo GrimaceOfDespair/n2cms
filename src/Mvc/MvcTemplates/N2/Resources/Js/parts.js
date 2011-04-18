@@ -27,6 +27,13 @@
 				e.stopPropagation();
 				self.showDialog($(this).attr('href'));
 			});
+			var host = window.location.protocol + "//" + window.location.host + "/";
+			console.log(host);
+			$("a").filter(function () { return this.href.indexOf(host) == 0; })
+				.filter(function () { return this.parentNode.className.indexOf('control') != 0; })
+				.each(function () {
+					this.href += (this.href.indexOf('?') >= 0 ? '&' : '?') + "edit=drag";
+				});
 		},
 
 		showDialog: function (href) {
@@ -87,7 +94,9 @@
 				var title = $(zone).attr("title");
 				if (allowed.indexOf(type + ",") >= 0) {
 					$(zone).append("<div class='dropPoint below'/>");
-					$(".zoneItem", zone).not(function () { return $(this).closest(".dropZone")[0] === zone; }).each(function (i) { $(this).before("<div class='dropPoint before' title='" + i + "'/>"); });
+					$(".zoneItem", zone)
+						.not(function () { return $(this).closest(".dropZone")[0] !== zone; })
+						.each(function (i) { $(this).before("<div class='dropPoint before' title='" + i + "'/>"); });
 				}
 				$(".dropPoint", zone).html("<div class='description'>" + title + "</div>");
 			});

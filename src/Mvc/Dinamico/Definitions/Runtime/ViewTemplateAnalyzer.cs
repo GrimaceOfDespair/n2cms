@@ -91,7 +91,7 @@ namespace N2.Definitions.Runtime
 		{
 			var re = new ContentRegistration();
 			re.ContentType = modelType;
-			re.Template = N2.Web.Url.RemoveExtension(file.Name);
+			re.Template = N2.Web.Url.RemoveAnyExtension(file.Name);
 			re.IsDefined = false;
 			using (StringWriter sw = new StringWriter())
 			{
@@ -126,9 +126,8 @@ namespace N2.Definitions.Runtime
 
 		private ItemDefinition GetOrCreateDefinition(ContentRegistration re)
 		{
-			var definition = builder.GetDefinitions().FirstOrDefault(d => d.ItemType == re.ContentType)
-				?? map.GetOrCreateDefinition(re.ContentType, re.Template);
-			return definition.Clone();
+			var definition = map.GetOrCreateDefinition(re.ContentType, re.Template);
+			return definition;
 		}
 
 		class StubController : Controller

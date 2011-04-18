@@ -9,6 +9,7 @@ using N2.Engine;
 using N2.Persistence.Proxying;
 using N2.Plugin;
 using System.Diagnostics;
+using N2.Definitions.Static;
 
 namespace N2.Definitions
 {
@@ -19,12 +20,16 @@ namespace N2.Definitions
 	public class DefinitionManager : IDefinitionManager, IAutoStart
 	{
 		private readonly IDefinitionProvider[] definitionProviders;
+		private readonly ITemplateProvider[] providers;
 		private readonly ContentActivator activator;
+		private readonly StateChanger stateChanger;
 
-		public DefinitionManager(IDefinitionProvider[] definitionProviders, ContentActivator activator)
+		public DefinitionManager(IDefinitionProvider[] definitionProviders, ITemplateProvider[] providers, ContentActivator activator, StateChanger changer)
 		{
 			this.definitionProviders = definitionProviders;
+			this.providers = providers;
 			this.activator = activator;
+			this.stateChanger = changer;
 		}
 
 		/// <summary>Creates an instance of a certain type of item. It's good practice to create new items through this method so the item's dependencies can be injected by the engine.</summary>
@@ -71,6 +76,10 @@ namespace N2.Definitions
 		/// <returns>The definition matching a certain item.</returns>
 		public virtual ItemDefinition GetDefinition(ContentItem item)
 		{
+			var t = GetTemplate(item);
+			if (t != null)
+				return t.Definition;
+
 			return GetDefinition(item.GetContentType());
 		}
 
@@ -111,24 +120,59 @@ namespace N2.Definitions
 		[Obsolete]
 		public event EventHandler<ItemEventArgs> ItemCreated;
 
+
+		public virtual IEnumerable<TemplateDefinition> GetTemplates(Type contentType)
+		{
+			if (contentType == null) return new TemplateDefinition[0];
+
+			var templates = providers.SelectMany(tp => tp.GetTemplates(contentType)).ToList();
+			if (!templates.Any(t => t.ReplaceDefault))
+				return templates;
+			return templates.Where(t => t.Name != null).ToList();
+		}
+
+		public virtual TemplateDefinition GetTemplate(Type contentType, string templateName)
+		{
+			if (contentType == null) return null;
+
+			return providers
+				.SelectMany(tp => tp.GetTemplates(contentType))
+				.FirstOrDefault(td => td.Name == templateName);
+		}
+
+		public virtual TemplateDefinition GetTemplate(ContentItem item)
+		{
+			if (item == null) return null;
+
+			return providers.Select(tp => tp.GetTemplate(item)).FirstOrDefault(t => t != null);
+		}
+
 		#region IAutoStart Members
 
 		public void Start()
 		{
-			Debug.WriteLine("DefinitionManager.Start");
+			activator.ItemCreated += activator_ItemCreated;
+			stateChanger.StateChanged += stateChanger_StateChanged;
+
 			activator.Initialize(definitionProviders.SelectMany(dp => dp.GetDefinitions()).Select(d => d.ItemType));
-			activator.ItemCreated += new EventHandler<ItemEventArgs>(activator_ItemCreated);
+		}
+
+		public void Stop()
+		{
+			activator.ItemCreated -= activator_ItemCreated;
+			stateChanger.StateChanged -= stateChanger_StateChanged;
+		}
+
+		void stateChanger_StateChanged(object sender, StateChangedEventArgs e)
+		{
+			foreach (var ct in GetDefinition(e.AffectedItem).ContentTransformers.Where(ct => (ct.ChangingTo & e.AffectedItem.State) == e.AffectedItem.State))
+				ct.Transform(e.AffectedItem);
 		}
 
 		void activator_ItemCreated(object sender, ItemEventArgs e)
 		{
 			if (ItemCreated != null)
 				ItemCreated(this, e);
-		}
-
-		public void Stop()
-		{
-			activator.ItemCreated -= new EventHandler<ItemEventArgs>(activator_ItemCreated);
 		}
 
 		#endregion

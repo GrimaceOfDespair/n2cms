@@ -64,11 +64,12 @@ namespace N2.Tests.Definitions
 
 			user = CreatePrincipal("SomeSchmuck");
 
-			DefinitionBuilder builder = new DefinitionBuilder(typeFinder, new EngineSection());
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection());
 			IItemNotifier notifier = mocks.DynamicMock<IItemNotifier>();
 			mocks.Replay(notifier);
-			activator = new ContentActivator(new N2.Edit.Workflow.StateChanger(), notifier, new EmptyProxyFactory());
-			definitions = new DefinitionManager(new [] {new DefinitionProvider(builder)}, activator);
+			var changer = new N2.Edit.Workflow.StateChanger();
+			activator = new ContentActivator(changer, notifier, new EmptyProxyFactory());
+			definitions = new DefinitionManager(new[] { new DefinitionProvider(builder) }, new ITemplateProvider[0], activator, changer);
 		}
 
 		#endregion
@@ -498,6 +499,15 @@ namespace N2.Tests.Definitions
 			var definition = definitions.GetDefinition(typeof(DefinitionRemovesParent));
 
 			Assert.That(definition.Discriminator, Is.EqualTo("DefinitionRemovedByParent"));
+		}
+
+		[Test]
+		public void Displayable_TakesPrecedence_OverEditable_WhenDefined()
+		{
+			var definition = definitions.GetDefinition(typeof(DefinitionTextPage));
+
+			var displayable = definition.Displayables.Single(d => d.Name == "Text");
+			Assert.That(displayable, Is.InstanceOf<DisplayableLiteralAttribute>());
 		}
 	}
 }
