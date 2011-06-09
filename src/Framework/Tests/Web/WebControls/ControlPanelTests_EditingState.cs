@@ -1,7 +1,6 @@
-﻿using System.Web.UI;
+﻿using System.Web;
 using N2.Web.UI.WebControls;
 using NUnit.Framework;
-using System.Web;
 
 namespace N2.Tests.Web.WebControls
 {
@@ -19,7 +18,7 @@ namespace N2.Tests.Web.WebControls
 		[Test]
 		public void CanRenderItem_InDroppableZone_WhenDragDrop()
 		{
-			Zone z = new DroppableZone().AddedToFakePage(HttpContext.Current);
+			Zone z = new DroppableZone().AddedToFakePage(HttpContext.Current, page);
 			z.CurrentItem = page;
 			z.ZoneName = ZoneName;
 

@@ -1,13 +1,9 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Reflection;
-using N2.Details;
-using N2.Edit;
-using N2.Engine;
-using N2.Web.UI;
 using N2.Configuration;
+using N2.Engine;
 
 namespace N2.Definitions.Static
 {
@@ -19,21 +15,18 @@ namespace N2.Definitions.Static
 	{
 		private readonly DefinitionMap staticDefinitions;
 		private readonly ITypeFinder typeFinder;
+		TransformerBase<IUniquelyNamed>[] transformers;
 		private readonly EngineSection config;
 		
 		private ItemDefinition[] definitionsCache;
 
-		public DefinitionBuilder(DefinitionMap staticDefinitions, ITypeFinder typeFinder, EngineSection config)
+		public DefinitionBuilder(DefinitionMap staticDefinitions, ITypeFinder typeFinder, TransformerBase<IUniquelyNamed>[] transformers, EngineSection config)
 		{
 			this.staticDefinitions = staticDefinitions;
 			this.typeFinder = typeFinder;
+			this.transformers = transformers;
 			this.config = config;
 		}
-
-		//public DefinitionBuilder(ITypeFinder typeFinder, EngineSection config)
-		//    : this(DefinitionMap.Instance, typeFinder, config)
-		//{
-		//}
 
 		/// <summary>Builds item definitions in the current environment.</summary>
 		/// <returns>A dictionary of item definitions in the current environment.</returns>
@@ -44,8 +37,29 @@ namespace N2.Definitions.Static
 
 			List<ItemDefinition> definitions = FindDefinitions();
 			ExecuteRefiners(definitions);
+			ExecuteTransformers(definitions);
+
 
 			return definitionsCache = definitions.ToArray();
+		}
+
+		private void ExecuteTransformers(List<ItemDefinition> definitions)
+		{
+			foreach (var d in definitions)
+			{
+				ExecuteRefiners(d.Editables);
+				ExecuteRefiners(d.Containers);
+				ExecuteRefiners(d.EditableModifiers);
+				ExecuteRefiners(d.Displayables);
+			}
+		}
+
+		private void ExecuteRefiners<T>(IList<T> attributes) where T : IUniquelyNamed
+		{
+			for (int i = 0; i < attributes.Count; i++)
+				foreach (var t in transformers)
+					if (t.IsTransformable(attributes[i]))
+						attributes[i] = (T)t.Transform(attributes[i]);
 		}
 
 		protected List<ItemDefinition> FindDefinitions()

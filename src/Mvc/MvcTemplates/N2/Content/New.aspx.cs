@@ -19,16 +19,15 @@
 #endregion
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Web.UI.WebControls;
+using N2.Collections;
 using N2.Definitions;
 using N2.Integrity;
-using N2.Web.UI.WebControls;
 using N2.Security;
 using N2.Web;
-using N2.Collections;
-using System.Web.UI;
+using N2.Web.UI.WebControls;
 
 namespace N2.Edit
 {
@@ -190,7 +189,7 @@ namespace N2.Edit
 
 			if (allowedChildrenCount == 0)
 			{
-				Title = string.Format(GetLocalResourceString("NewPage.Title.NoneAllowed"), ParentItemDefinition.Title);
+				Title = string.Format(GetLocalResourceString("NewPage.Title.NoneAllowed", "No item is allowed below an item of type \"{0}\""), ParentItemDefinition.Title);
 			}
 			else if (allowedChildrenCount == 1 && allowedChildren.Count == 1)
 			{
@@ -198,7 +197,7 @@ namespace N2.Edit
 			}
 			else
 			{
-				Title = string.Format(GetLocalResourceString("NewPage.Title.Select"), ActualItem.Title);
+				Title = string.Format(GetLocalResourceString("NewPage.Title.Select", "Select type of item below \"{0}\""), ActualItem.Title);
 
 				var top = allowedChildren.OrderByDescending(d => d.NumberOfItems).ThenBy(d => d.SortOrder).Take(1).ToList();
 				var rest = allowedChildren.Except(top).ToList();
@@ -209,7 +208,11 @@ namespace N2.Edit
 
 		public IEnumerable<TemplateDefinition> GetTemplates(ItemDefinition definition)
 		{
-			return Definitions.GetTemplates(definition.ItemType).OrderBy(t => t.Definition.Template == null ? 0 : 1);
+			return Definitions.GetTemplates(definition.ItemType)
+				.AllowedBelow(Definitions.GetDefinition(Selection.SelectedItem), Selection.SelectedItem, Engine.Definitions)
+				.Where(t => t.Definition.IsAllowed(ZoneName, User))
+				.OrderBy(t => (t.Definition.TemplateKey ?? "Index") == "Index" ? 0 : 1)
+				.ThenBy(t => t.Definition.SortOrder);
 		}
 
 		private void LoadZones()

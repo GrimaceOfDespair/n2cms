@@ -1,16 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Web.Mvc;
-using System.Web.Routing;
-using N2.Engine;
 using N2.Definitions;
 
 namespace N2.Web.Mvc.Html
 {
     public static class ContentItemExtensions
 	{
+		public static PathData CurrentPath(this HtmlHelper helper)
+		{
+			return new PathData { CurrentItem = helper.CurrentItem<ContentItem>(), CurrentPage = helper.CurrentPage<ContentItem>() };
+		}
+
         public static ContentItem CurrentPage(this HtmlHelper helper)
         {
             return helper.CurrentPage<ContentItem>();
@@ -77,10 +78,15 @@ namespace N2.Web.Mvc.Html
 				?? N2.Find.StartPage;
 		}
 
-		public static ContentItem StartPage<T>(this HtmlHelper html) where T : ContentItem
+		public static T StartPage<T>(this HtmlHelper html) where T : ContentItem
 		{
 			return Find.Closest<T>(html.CurrentItem())
-				?? N2.Find.StartPage;
+				?? N2.Find.StartPage as T;
+		}
+
+		public static ContentItem RootPage(this HtmlHelper html)
+		{
+			return Find.EnumerateParents(html.CurrentItem(), null, true).LastOrDefault();
 		}
     }
 }

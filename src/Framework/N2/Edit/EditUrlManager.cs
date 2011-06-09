@@ -4,7 +4,6 @@ using N2.Configuration;
 using N2.Definitions;
 using N2.Engine;
 using N2.Web;
-using N2.Plugin;
 
 namespace N2.Edit
 {
@@ -149,8 +148,8 @@ namespace N2.Edit
 			url = url.AppendQuery("selected", parent.Path);
 			url = url.AppendQuery("discriminator", definition.Discriminator);
 			url = url.AppendQuery("zoneName", zoneName);
-			if (!string.IsNullOrEmpty(definition.Template))
-				url = url.AppendQuery("template", definition.Template);
+			if (!string.IsNullOrEmpty(definition.TemplateKey))
+				url = url.AppendQuery("template", definition.TemplateKey);
 
 			if (position == CreationPosition.Before)
 				url = url.AppendQuery("before", selected.Path);

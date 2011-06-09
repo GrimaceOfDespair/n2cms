@@ -2,8 +2,8 @@ using System;
 using N2.Definitions;
 using N2.Edit.Web;
 using N2.Integrity;
-using N2.Web;
 using N2.Security;
+using N2.Web;
 
 namespace N2.Edit
 {
@@ -79,15 +79,15 @@ namespace N2.Edit
 
 		private void LoadDefaultsAndInfo(ContentItem moved, ContentItem destination)
 		{
-            Title = string.Format(GetLocalResourceString("MovePage.TitleFormat"),
+            Title = string.Format(GetLocalResourceString("MovePage.TitleFormat", "Move \"{0}\" onto \"{1}\""),
                                   moved.Title,
                                   destination.Title);
 
-            from.Text = string.Format(GetLocalResourceString("from.TextFormat"),
+            from.Text = string.Format(GetLocalResourceString("from.TextFormat", "{0}&lt;b&gt;{1}&lt;/b&gt;"),
                                       moved.Parent != null ? moved.Parent.Path : "",
                                       moved.Name);
 
-            to.Text = string.Format(GetLocalResourceString("to.TextFormat"),
+			to.Text = string.Format(GetLocalResourceString("to.TextFormat", "{0}&lt;b&gt;{1}&lt;/b&gt;"),
                                     destination.Path,
                                     moved.Name);
 

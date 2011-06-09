@@ -1,19 +1,16 @@
 using System;
-using System.Linq;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Resources;
 using System.Text.RegularExpressions;
-using System.Web;
-using N2.Integrity;
-using System.Diagnostics;
-using N2.Engine;
 using System.Threading;
+using System.Web;
+using N2.Engine;
+using N2.Integrity;
 using N2.Persistence.NH;
 using NHibernate;
-using NHibernate.Search;
 
 namespace N2
 {
@@ -140,6 +137,33 @@ namespace N2
 			if (value != null && !value.GetType().IsAssignableFrom(pi.PropertyType))
 				value = Convert(value, pi.PropertyType);
 			pi.SetValue(instance, value, new object[0]);
+		}
+
+		/// <summary>Sets a property on an object to a valuae.</summary>
+		/// <param name="instance">The object whose property to set.</param>
+		/// <param name="propertyName">The name of the property to set.</param>
+		/// <param name="value">The value to set the property to.</param>
+		public static bool TrySetProperty(object instance, string propertyName, object value)
+		{
+			if (instance == null) return false;
+			if (propertyName == null) return false;
+
+			Type instanceType = instance.GetType();
+			PropertyInfo pi = instanceType.GetProperty(propertyName);
+			if (pi == null) return false;
+			if (!pi.CanWrite) return false;
+
+			if (value != null && !value.GetType().IsAssignableFrom(pi.PropertyType))
+				value = Convert(value, pi.PropertyType);
+			try
+			{
+				pi.SetValue(instance, value, new object[0]);
+				return true;
+			}
+			catch (Exception)
+			{
+				return false;
+			}
 		}
 
 		/// <summary>Gets a value from a property.</summary>
@@ -492,7 +516,7 @@ namespace N2
 		/// <returns>The current trust level.</returns>
 		internal static AspNetHostingPermissionLevel GetTrustLevel()
 		{
-			foreach (AspNetHostingPermissionLevel trustLevel in new[] { AspNetHostingPermissionLevel.Unrestricted, AspNetHostingPermissionLevel.High, AspNetHostingPermissionLevel.Medium, AspNetHostingPermissionLevel.Low, AspNetHostingPermissionLevel.Minimal })
+			foreach (AspNetHostingPermissionLevel trustLevel in new[] { AspNetHostingPermissionLevel.Unrestricted, AspNetHostingPermissionLevel.High, AspNetHostingPermissionLevel.Medium })
 			{
 				try
 				{
@@ -555,9 +579,18 @@ namespace N2
 		/// <param name="engine">Used to resolve the provider.</param>
 		/// <param name="item">The item whose adapter to get.</param>
 		/// <returns>The most relevant adapter.</returns>
-		internal static T GetContentAdapter<T>(this IEngine engine, ContentItem item) where T:AbstractContentAdapter
+		internal static T GetContentAdapter<T>(this IEngine engine, ContentItem item) where T : AbstractContentAdapter
 		{
 			return engine.Resolve<IContentAdapterProvider>().ResolveAdapter<T>(item);
+		}
+
+		/// <summary>Shorthand for resolving an object via an IProvider.</summary>
+		/// <typeparam name="T">The type of object to retrieve.</typeparam>
+		/// <param name="engine">Used to resolve the provider.</param>
+		/// <returns>The the provided value.</returns>
+		internal static T GetProviderInstance<T>(this IEngine engine)
+		{
+			return engine.Resolve<IProvider<T>>().Get();
 		}
 
 		/// <summary>Tries to retrieve the engine provided by an accessor on the page, or falls back to the global singleton.</summary>
@@ -622,6 +655,15 @@ namespace N2
 
 			item[detailName] = value;
 			return true;
+		}
+
+		/// <summary>Formats a string using properties from the value object.</summary>
+		/// <param name="format">A format string, e.g. Hello {Title}.</param>
+		/// <param name="values">A value object, e.g. new { Title = "Hello" }</param>
+		/// <returns>The format string with any format placeholders replaced by value properties.</returns>
+		public static string Format(string format, object values)
+		{
+			return Regex.Replace(format, "{([\\w\\.]+)}", m => (string)Utility.Evaluate(values, m.Groups[1].Value), RegexOptions.Compiled);
 		}
 	}
 }

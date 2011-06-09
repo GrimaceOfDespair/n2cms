@@ -15,6 +15,7 @@ namespace N2.Web
 
 		/// <summary>The token used for resolving the management url.</summary>
 		public const string ManagementUrlToken = "{ManagementUrl}";
+		public const string ThemesUrlToken = "{ThemesUrl}";
 
 		static readonly string[] querySplitter = new[] {"&amp;", Amp};
 		static readonly char[] slashes = new char[] { '/' };
@@ -22,7 +23,7 @@ namespace N2.Web
 		static string defaultExtension = ".aspx";
 		static string defaultDocument = "Default.aspx";
 
-		static Dictionary<string, string> replacements = new Dictionary<string, string> { { ManagementUrlToken, "~/N2" } };
+		static Dictionary<string, string> replacements = new Dictionary<string, string> { { ManagementUrlToken, "~/N2" }, { ThemesUrlToken, "~/App_Themes/" } };
 
 		string scheme;
 		string authority;
@@ -390,6 +391,11 @@ namespace N2.Web
 		public Url SetQueryParameter(string key, string value)
 		{
 			return SetQueryParameter(key, value, false);
+		}
+
+		public Url RemoveQuery(string key)
+		{
+			return SetQueryParameter(key, null, true);
 		}
 
 		public Url SetQueryParameter(string key, string value, bool removeNullValue)

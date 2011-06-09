@@ -1,21 +1,21 @@
 using System;
 using System.Collections.Generic;
-using N2.Configuration;
-using N2.Tests.Fakes;
-using NUnit.Framework;
-using N2.Edit;
-using N2.Definitions;
+using System.Security.Principal;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using N2.Web.UI.WebControls;
-using Rhino.Mocks;
-using N2.Persistence;
-using N2.Tests.Edit.Items;
-using System.Security.Principal;
-using N2.Persistence.Proxying;
+using N2.Configuration;
+using N2.Definitions;
 using N2.Definitions.Static;
+using N2.Edit;
+using N2.Persistence;
+using N2.Persistence.Proxying;
 using N2.Security;
+using N2.Tests.Edit.Items;
+using N2.Tests.Fakes;
 using N2.Web;
+using N2.Web.UI.WebControls;
+using NUnit.Framework;
+using Rhino.Mocks;
 
 namespace N2.Tests.Edit
 {
@@ -42,7 +42,7 @@ namespace N2.Tests.Edit
 		public override void SetUp()
 		{
 			base.SetUp();
-			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection());
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection());
 			IItemNotifier notifier = mocks.DynamicMock<IItemNotifier>();
 			mocks.Replay(notifier);
 			var changer = new N2.Edit.Workflow.StateChanger();
@@ -54,9 +54,9 @@ namespace N2.Tests.Edit
 			editManager.EnableVersioning = true;
 
 			var engine = new FakeEngine();
-			engine.AddComponentInstance("editManager", typeof(IEditManager), editManager);
+			engine.Container.AddComponentInstance("editManager", typeof(IEditManager), editManager);
 
-			engine.AddComponentInstance("editSection", typeof(EditSection), new EditSection());
+			engine.Container.AddComponentInstance("editSection", typeof(EditSection), new EditSection());
 
 			Context.Replace(engine);
 		}

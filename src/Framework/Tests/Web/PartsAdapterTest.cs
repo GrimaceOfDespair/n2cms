@@ -1,16 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
-using N2.Configuration;
+using N2.Definitions;
 using N2.Engine;
-using N2.Persistence;
-using N2.Persistence.NH;
-using N2.Tests.Fakes;
+using N2.Engine.MediumTrust;
 using N2.Tests.Web.Items;
-using N2.Web;
 using N2.Web.Parts;
 using NUnit.Framework;
-using N2.Definitions;
-using N2.Engine.MediumTrust;
+using N2.Web;
 
 namespace N2.Tests.Web
 {
@@ -31,9 +27,7 @@ namespace N2.Tests.Web
 		[SetUp]
 		public override void SetUp()
 		{
-			engine = new ContentEngine(new MediumTrustServiceContainer(), EventBroker.Instance, new ContainerConfigurer());
-			//engine.Resolve<EngineSection>().Assemblies.Add(new System.Web.Configuration.AssemblyInfo("N2"));
-			//engine.Resolve<EngineSection>().Assemblies.Add(new System.Web.Configuration.AssemblyInfo("N2.Tests"));
+			engine = new ContentEngine(new MediumTrustServiceContainer(), new EventBroker(), new ContainerConfigurer());
 			base.SetUp();
 		}
 	}

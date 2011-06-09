@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
+﻿using N2.Persistence.Search;
 namespace N2.Definitions
 {
+	[SearchableType]
 	public interface IRootPage
 	{
 	}

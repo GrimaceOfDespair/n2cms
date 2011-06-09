@@ -28,7 +28,6 @@
 				self.showDialog($(this).attr('href'));
 			});
 			var host = window.location.protocol + "//" + window.location.host + "/";
-			console.log(host);
 			$("a").filter(function () { return this.href.indexOf(host) == 0; })
 				.filter(function () { return this.parentNode.className.indexOf('control') != 0; })
 				.each(function () {
@@ -200,7 +199,7 @@
 			var url = self.urls[command.action];
 
 			var reloaded = false;
-			$.getJSON(url, command, function (data) {
+			$.post(url, command, function (data) {
 				reloaded = true;
 				if (data.redirect && command.action == "create" && data.dialog !== "no")
 					self.showDialog(data.redirect);
@@ -208,7 +207,7 @@
 					window.location = data.redirect;
 				else
 					window.location.reload();
-			});
+			}, "json");
 
 			// hack: why no success??
 			setTimeout(function () {

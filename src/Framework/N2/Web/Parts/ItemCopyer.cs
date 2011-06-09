@@ -1,22 +1,18 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Text;
-using N2.Persistence;
-using N2.Web;
 using N2.Edit;
 using N2.Engine;
+using N2.Persistence;
 
 namespace N2.Web.Parts
 {
-	[Service]
+	[Service(typeof(IAjaxService))]
 	public class ItemCopyer : PartsAjaxService
 	{
 		readonly Navigator navigator;
         readonly IPersister persister;
 
-        public ItemCopyer(IPersister persister, Navigator navigator, AjaxRequestDispatcher dispatcher)
-			: base(dispatcher)
+        public ItemCopyer(IPersister persister, Navigator navigator)
 		{
             this.persister = persister;
 			this.navigator = navigator;

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using N2.Persistence.Finder;
 
 namespace N2.Persistence.NH.Finder
@@ -84,6 +81,12 @@ namespace N2.Persistence.NH.Finder
 			}
 
 			query.Criterias.Add(new PropertyInHqlProvider<T>(op, name, anyOf));
+			return query;
+		}
+
+		public IQueryAction Null(bool isNull)
+		{
+			query.Criterias.Add(new PropertyNullHqlProvider<bool>(op, name, isNull));
 			return query;
 		}
 

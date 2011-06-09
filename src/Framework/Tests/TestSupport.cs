@@ -2,21 +2,21 @@
 using System.Configuration;
 using N2.Configuration;
 using N2.Definitions;
+using N2.Definitions.Static;
 using N2.Details;
+using N2.Edit;
+using N2.Edit.Workflow;
 using N2.Engine;
 using N2.Persistence;
+using N2.Persistence.Finder;
 using N2.Persistence.NH;
 using N2.Persistence.NH.Finder;
-using N2.Tests.Fakes;
-using NHibernate.Tool.hbm2ddl;
-using N2.Edit;
-using N2.Persistence.Finder;
-using N2.Security;
-using N2.Web;
-using N2.Edit.Workflow;
 using N2.Persistence.Proxying;
-using NHibernate;
-using N2.Definitions.Static;
+using N2.Security;
+using N2.Tests.Fakes;
+using N2.Web;
+using NHibernate.Tool.hbm2ddl;
+using Rhino.Mocks;
 
 namespace N2.Tests
 {
@@ -36,13 +36,14 @@ namespace N2.Tests
 			Setup(out definitionProviders, out definitions, out activator, out notifier, out proxyFactory, itemTypes);
 
 			var connectionStrings = (ConnectionStringsSection)ConfigurationManager.GetSection("connectionStrings");
-			var configurationBuilder = new ConfigurationBuilder(definitionProviders, new ClassMappingGenerator(), new ThreadContext(), participators, config, connectionStrings);
+			var map = new DefinitionMap();
+			var configurationBuilder = new ConfigurationBuilder(definitionProviders, new ClassMappingGenerator(map), new ThreadContext(), participators, config, connectionStrings);
 			var configurationSource = new ConfigurationSource(configurationBuilder);
 
 			sessionProvider = new FakeSessionProvider(configurationSource, new NHInterceptor(proxyFactory, configurationSource, notifier), context);
 			sessionProvider.CurrentSession = null;
 
-			finder = new ItemFinder(sessionProvider, new DefinitionMap());
+			finder = new ItemFinder(sessionProvider, map);
 
 			schemaCreator = new SchemaExport(configurationSource.BuildConfiguration());
 		}
@@ -62,7 +63,7 @@ namespace N2.Tests
         {
             ITypeFinder typeFinder = new Fakes.FakeTypeFinder(itemTypes[0].Assembly, itemTypes);
 
-			DefinitionBuilder definitionBuilder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection());
+			DefinitionBuilder definitionBuilder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection());
 			notifier = new ItemNotifier();
 			proxyFactory = new InterceptingProxyFactory();
 			activator = new ContentActivator(new N2.Edit.Workflow.StateChanger(), notifier, proxyFactory);
@@ -98,5 +99,27 @@ namespace N2.Tests
 
             Setup(out persister, sessionProvider, itemRepository, linkRepository, finder, schemaCreator);
         }
-    }
+
+		public static ContentPersister SetupFakePersister()
+		{
+			FakeRepository<ContentItem> repository;
+			FakeRepository<ContentDetail> linkRepository;
+			IItemFinder finder;
+			return SetupFakePersister(out repository, out linkRepository, out finder);
+		}
+
+		public static ContentPersister SetupFakePersister(out FakeRepository<ContentItem> repository, out FakeRepository<ContentDetail> linkRepository, out IItemFinder finder)
+		{
+			repository = new Fakes.FakeRepository<ContentItem>();
+			linkRepository = new Fakes.FakeRepository<ContentDetail>();
+			finder = MockRepository.GenerateStub<N2.Persistence.Finder.IItemFinder>();
+			
+			return new ContentPersister(repository, linkRepository, finder);
+		}
+
+		public static UrlParser Setup(IPersister persister, FakeWebContextWrapper wrapper, IHost host)
+		{
+			return new UrlParser(persister, wrapper, host, new HostSection());
+		}
+	}
 }

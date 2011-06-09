@@ -12,7 +12,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -50,6 +49,8 @@ namespace N2.Web.UI.WebControls
 		#endregion
 
 		#region Properties
+
+		public Type ContainerTypeFilter { get; set; }
 
 		public virtual IEngine Engine { get; set; }
 
@@ -154,7 +155,7 @@ namespace N2.Web.UI.WebControls
 
 			if (definition != null)
 			{
-				AddedEditors = EditAdapter.AddDefinedEditors(definition, CurrentItem, this, Page.User);
+				AddedEditors = EditAdapter.AddDefinedEditors(definition, CurrentItem, this, Page.User, ContainerTypeFilter);
 				if (!Page.IsPostBack)
 				{
 					EditAdapter.LoadAddedEditors(definition, CurrentItem, AddedEditors, Page.User);
@@ -277,6 +278,26 @@ namespace N2.Web.UI.WebControls
 		public CommandContext CreateCommandContext()
 		{
 			return new CommandContext(Definition ?? GetDefinition(), CurrentItem, Interfaces.Editing, Page.User, this, new PageValidator<CommandContext>(Page));
+		}
+
+		public void Initialize(string discriminator, string template, ContentItem parent)
+		{
+			var definition = Engine.Definitions.GetDefinition(discriminator);
+			if (!string.IsNullOrEmpty(template))
+			{
+				var info = Engine.Definitions.GetTemplate(definition.ItemType, template);
+				if (info == null)
+					throw new InvalidOperationException("Failed to find definition for type " + definition.ItemType + " and template " + template);
+				Definition = info.Definition;
+				CurrentItem = info.Template();
+				CurrentItem.Parent = parent;
+			}
+			else
+			{
+				Discriminator = definition.Discriminator;
+				ParentPath = parent.Path;
+			}
+			EnsureChildControls();
 		}
 	}
 }

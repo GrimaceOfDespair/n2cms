@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Web.Mvc;
-using System.Web.UI;
 using System.Web;
-using N2.Web.UI;
-using System.Security.Principal;
+using System.Web.Mvc;
 using System.Web.Routing;
+using System.Web.UI;
+using N2.Web.UI;
 
 namespace N2.Web.Mvc
 {
@@ -39,7 +35,7 @@ namespace N2.Web.Mvc
 			if (user == null || user.Identity.IsAuthenticated)
 				return;
 
-			ICacheManager cacheManager = requestContext.RouteData.ResolveService<ICacheManager>();
+			ICacheManager cacheManager = RouteExtensions.ResolveService<ICacheManager>(requestContext.RouteData);
 			if (!cacheManager.Enabled)
 				return;
 

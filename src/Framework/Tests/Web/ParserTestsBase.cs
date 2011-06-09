@@ -1,9 +1,8 @@
 using N2.Configuration;
 using N2.Tests.Fakes;
 using N2.Tests.Web.Items;
-using NUnit.Framework;
-using N2.Persistence;
 using N2.Web;
+using NUnit.Framework;
 
 namespace N2.Tests.Web
 {
@@ -29,7 +28,7 @@ namespace N2.Tests.Web
 
         protected virtual UrlParser CreateUrlParser()
         {
-            return new UrlParser(persister, wrapper, host, new HostSection());
+			return TestSupport.Setup(persister, wrapper, host);
         }
 
 		protected void CreateDefaultStructure()

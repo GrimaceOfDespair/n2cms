@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Principal;
+using N2.Tests.Fakes;
+using N2.Web;
 using NUnit.Framework;
 using Rhino.Mocks;
-using N2.Web;
-using N2.Tests.Fakes;
 
 namespace N2.Tests
 {
@@ -35,6 +35,7 @@ namespace N2.Tests
 			item.ID = id;
 			item.Name = name;
 			item.Title = name;
+			item.AncestralTrail = N2.Utility.GetTrail(parent);
 			item.AddTo(parent);
 			return item;
 		}

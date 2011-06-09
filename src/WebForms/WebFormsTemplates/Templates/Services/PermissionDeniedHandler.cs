@@ -4,10 +4,12 @@ using N2.Plugin;
 using N2.Security;
 using N2.Web;
 using N2.Templates.Items;
+using N2.Engine;
 
 namespace N2.Templates.Services
 {
-    public class PermissionDeniedHandler : IAutoStart
+    [Service]
+	public class PermissionDeniedHandler : IAutoStart
     {
         ISecurityEnforcer securityEnforcer;
         IUrlParser parser;
@@ -26,7 +28,7 @@ namespace N2.Templates.Services
             if (startPage != null && startPage.LoginPage != null)
             {
                 e.Cancel = true;
-                context.Response.Redirect(Url.Parse(startPage.LoginPage.Url).AppendQuery("returnUrl", context.Url.LocalUrl));
+				context.HttpContext.Response.Redirect(Url.Parse(startPage.LoginPage.Url).AppendQuery("returnUrl", context.Url.LocalUrl));
             }
         }
 

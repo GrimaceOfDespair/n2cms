@@ -4,22 +4,20 @@ using System.Web.Mvc;
 using System.Web.Routing;
 using N2.Configuration;
 using N2.Definitions;
-using N2.Edit;
+using N2.Definitions.Static;
+using N2.Edit.Workflow;
 using N2.Engine;
 using N2.Extensions.Tests.Fakes;
 using N2.Extensions.Tests.Mvc.Controllers;
 using N2.Extensions.Tests.Mvc.Models;
+using N2.Persistence;
+using N2.Persistence.Proxying;
 using N2.Tests;
 using N2.Tests.Fakes;
 using N2.Web;
 using N2.Web.Mvc;
 using NUnit.Framework;
 using Rhino.Mocks;
-using HtmlHelper = System.Web.Mvc.HtmlHelper;
-using N2.Persistence.Proxying;
-using N2.Persistence;
-using N2.Definitions.Static;
-using N2.Edit.Workflow;
 
 namespace N2.Extensions.Tests.Mvc
 {
@@ -64,10 +62,11 @@ namespace N2.Extensions.Tests.Mvc
 				.ToArray();
 
 			var changer = new StateChanger();
-			var definitions = new DefinitionManager(new[] { new DefinitionProvider(new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection())) }, new ITemplateProvider[0], new ContentActivator(changer, null, new EmptyProxyFactory()), changer);
-			var webContext = new ThreadContext();
+			var definitions = new DefinitionManager(new[] { new DefinitionProvider(new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection())) }, new ITemplateProvider[0], new ContentActivator(changer, null, new EmptyProxyFactory()), changer);
+			httpContext = new FakeHttpContext();
+			var webContext = new FakeWebContextWrapper(httpContext);
 			var host = new Host(webContext, root.ID, root.ID);
-			var parser = new UrlParser(persister, webContext, host, new HostSection());
+			var parser = TestSupport.Setup(persister, webContext, host);
 			controllerMapper = new ControllerMapper(typeFinder, definitions);
 			Url.DefaultExtension = "";
 
@@ -82,7 +81,6 @@ namespace N2.Extensions.Tests.Mvc
 
 			route = new ContentRoute(engine, new MvcRouteHandler(), controllerMapper, null);
 
-			httpContext = new FakeHttpContext();
 			routes = new RouteCollection { route };
 		}
 

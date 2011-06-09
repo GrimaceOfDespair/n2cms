@@ -1,12 +1,11 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Web;
+using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using N2.Edit.Web;
-using N2.Web;
 using N2.Integrity;
+using N2.Web;
 
 namespace N2.Edit
 {
@@ -30,11 +29,6 @@ namespace N2.Edit
             get { return currentItem; }
             set { currentItem = value; }
         }
-		protected string GetNewDataItemText(object dataItem)
-		{
-			return string.Format((string)GetLocalResourceObject("hlNew.TextFormat"),
-				DataBinder.Eval(dataItem, "Title"));
-		}
 	
         protected string GetNewDataItemUrl(object dataItem)
         {

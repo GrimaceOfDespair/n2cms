@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 using N2.Persistence.Finder;
 
 namespace N2.Persistence.NH.Finder
@@ -36,5 +34,16 @@ namespace N2.Persistence.NH.Finder
 		}
 		#endregion
 
+
+		#region ICriteria<ContentItem> Members
+
+		public IQueryAction IsNull(bool isNull)
+		{
+			query.Criterias.Add(new PropertyIsNullHqlProvider<ContentItem>(op, "VersionOf", !isNull));
+
+			return query;
+		}
+
+		#endregion
 	}
 }

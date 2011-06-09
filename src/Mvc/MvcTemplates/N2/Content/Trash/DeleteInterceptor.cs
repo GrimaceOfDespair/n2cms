@@ -1,4 +1,4 @@
-using Castle.Core;
+using N2.Engine;
 using N2.Persistence;
 using N2.Plugin;
 
@@ -7,6 +7,7 @@ namespace N2.Edit.Trash
 	/// <summary>
 	/// Intercepts delete operations.
 	/// </summary>
+	[Service]
 	public class DeleteInterceptor : IAutoStart
 	{
 		private readonly IPersister persister;

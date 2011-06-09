@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Security.Principal;
 using System.Web.UI;
+using N2.Definitions;
 using N2.Edit.FileSystem;
 using N2.Engine;
-using N2.Web;
 using N2.Web.UI.WebControls;
-using N2.Definitions;
 
 namespace N2.Edit
 {
@@ -32,13 +31,26 @@ namespace N2.Edit
 		}
 
 		/// <summary>Adds the editors defined for the item to the control hierarchy.</summary>
-		/// <param name="itemType">The type to add editors for.</param>
+		/// <param name="definition">The definition containing editor information.</param>
+		/// <param name="item">The specific item being added.</param>
 		/// <param name="container">The container onto which to add editors.</param>
 		/// <param name="user">The user to filter access by.</param>
 		/// <returns>A editor name to control map of added editors.</returns>
 		public virtual IDictionary<string, Control> AddDefinedEditors(ItemDefinition definition, ContentItem item, Control container, IPrincipal user)
 		{
 			return EditManager.AddEditors(definition, item, container, user);
+		}
+
+		/// <summary>Adds the editors defined for the item to the control hierarchy.</summary>
+		/// <param name="definition">The definition containing editor information.</param>
+		/// <param name="item">The specific item being added.</param>
+		/// <param name="container">The container onto which to add editors.</param>
+		/// <param name="user">The user to filter access by.</param>
+		/// <param name="containerNameFilter">Only add editors within this container name.</param>
+		/// <returns>A editor name to control map of added editors.</returns>
+		public virtual IDictionary<string, Control> AddDefinedEditors(ItemDefinition definition, ContentItem item, Control container, IPrincipal user, Type containerTypeFilter)
+		{
+			return EditManager.AddEditors(definition, item, container, user, containerTypeFilter);
 		}
 
 		/// <summary>Updates editors with values from the item.</summary>

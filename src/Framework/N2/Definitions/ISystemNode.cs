@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
+﻿using N2.Persistence.Search;
 namespace N2.Definitions
 {
 	/// <summary>
@@ -10,6 +6,7 @@ namespace N2.Definitions
 	/// for public consumption. This interface is used for filtering system pages in
 	/// selection interfaces.
 	/// </summary>
+	[SearchableType]
 	public interface ISystemNode
 	{
 	}

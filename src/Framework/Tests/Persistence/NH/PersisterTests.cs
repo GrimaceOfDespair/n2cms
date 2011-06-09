@@ -1,19 +1,8 @@
 using System;
 using System.Linq;
+using System.Diagnostics;
 using N2.Tests.Persistence.Definitions;
 using NUnit.Framework;
-using System.Diagnostics;
-using N2.Definitions;
-using N2.Persistence;
-using NHibernate.Tool.hbm2ddl;
-using N2.Persistence.NH.Finder;
-using N2.Tests.Fakes;
-using N2.Persistence.NH;
-using N2.Collections;
-using N2.Details;
-using System.Collections;
-using NHibernate.Engine;
-using N2.Edit.Workflow;
 
 namespace N2.Tests.Persistence.NH
 {
@@ -21,11 +10,65 @@ namespace N2.Tests.Persistence.NH
 	public class PersisterTests : PersisterTestsBase
 	{
 		[Test]
-		public void CanSave()
+		public void Save_AssignsID()
 		{
 			ContentItem item = CreateOneItem<Definitions.PersistableItem1>(0, "saveableRoot", null);
 			persister.Save(item);
 			Assert.AreNotEqual(0, item.ID);
+		}
+
+		[Test]
+		public void Properties_ArePersisted()
+		{
+			ContentItem item = CreateOneItem<Definitions.PersistableItem1>(0, "anitem", null);
+			var props = typeof(ContentItem).GetProperties()
+				.Where(p => p.CanWrite)
+				.Where(p => GetExpectedValue(p.PropertyType) != null)
+				.Where(p => p.Name != "ID")
+				.Where(p => p.Name != "Updated")
+				.Where(p => p.Name != "AncestralTrail")
+				.ToArray();
+			
+			foreach (var pi in props)
+			{
+				pi.SetValue(item, GetExpectedValue(pi.PropertyType), null);
+			}
+
+			using (persister)
+			{
+				persister.Save(item);
+			}
+
+			using (persister)
+			{
+				var persistedItem = persister.Get(item.ID);
+				foreach (var pi in props)
+				{
+					object value = pi.GetValue(persistedItem, null);
+					object expected = GetExpectedValue(pi.PropertyType);
+					Assert.That(value, Is.EqualTo(expected), "Expected " + pi.Name + " to be " + expected + " but was " + value);
+				}
+			}
+		}
+
+		private static object GetExpectedValue(Type propertyType)
+		{
+			if (propertyType == typeof(string))
+				return "Hello";
+			else if (propertyType == typeof(int))
+				return 11;
+			else if (propertyType == typeof(int?))
+				return 11;
+			else if (propertyType == typeof(DateTime))
+				return new DateTime(2010, 06, 16);
+			else if (propertyType == typeof(DateTime?))
+				return new DateTime(2010, 06, 16);
+			else if (propertyType == typeof(bool))
+				return true;
+			else if (propertyType.IsEnum)
+				return Enum.Parse(propertyType, Enum.GetNames(propertyType).First());
+			
+			return null;
 		}
 
 		[Test, Ignore]

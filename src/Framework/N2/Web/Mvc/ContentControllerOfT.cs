@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Globalization;
+using System.Threading;
 using System.Web;
 using System.Web.Mvc;
 using N2.Engine;
-using N2.Security;
 using N2.Engine.Globalization;
-using System.Threading;
-using System.Globalization;
+using N2.Security;
 
 namespace N2.Web.Mvc
 {
@@ -22,6 +21,7 @@ namespace N2.Web.Mvc
 		T currentItem;
 		ContentItem currentPage;
 		IEngine engine;
+		ControllerContentHelper content = null;
 
 		/// <summary>
 		/// Used to resolve services.
@@ -31,7 +31,7 @@ namespace N2.Web.Mvc
 			get
 			{
 				return engine
-					?? (engine = RouteData.GetEngine());
+					?? (engine = RouteExtensions.GetEngine(RouteData));
 			}
 			set { engine = value; }
 		}
@@ -70,6 +70,12 @@ namespace N2.Web.Mvc
 			}
 			set { currentPart = value; }
 		}
+
+		public ControllerContentHelper Content
+		{
+			get { return content ?? (content = new ControllerContentHelper(Engine, () => new PathData { CurrentPage = CurrentPage, CurrentItem = CurrentItem })); }
+			set { content = value; }
+		}
 		#endregion
 
 
@@ -78,7 +84,10 @@ namespace N2.Web.Mvc
 		/// <returns>A reference to the item's template.</returns>
 		public virtual ActionResult Index()
 		{
-			return View(CurrentItem);
+			if (CurrentItem.IsPage)
+				return View(CurrentItem);
+			else
+				return PartialView(CurrentItem);
 		}
 
 

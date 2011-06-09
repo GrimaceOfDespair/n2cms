@@ -1,6 +1,5 @@
 using System;
 using N2.Security;
-using N2.Web;
 
 namespace N2.Edit
 {
@@ -47,18 +46,18 @@ namespace N2.Edit
 
 		private void LoadDefaultsAndInfo()
 		{
-			this.Title = string.Format(GetLocalResourceString("CopyPage.TitleFormat"),
+			this.Title = string.Format(GetLocalResourceString("CopyPage.TitleFormat", "Copy \"{0}\" onto \"{1}\""),
 				Selection.MemorizedItem.Title,
 				Selection.SelectedItem.Title);
 
 			itemsToCopy.CurrentItem = Selection.MemorizedItem;
 			itemsToCopy.DataBind();
 
-			this.from.Text = string.Format(GetLocalResourceString("from.TextFormat"),
+			this.from.Text = string.Format(GetLocalResourceString("from.TextFormat", "{0}&lt;b&gt;{1}&lt;/b&gt;"),
 										   Selection.MemorizedItem.Parent != null ? Selection.MemorizedItem.Parent.Path : "",
 										   Selection.MemorizedItem.Name);
 
-			this.to.Text = string.Format(GetLocalResourceString("to.TextFormat"),
+			this.to.Text = string.Format(GetLocalResourceString("to.TextFormat", "{0}&lt;b&gt;{1}&lt;/b&gt;"),
 				Selection.SelectedItem.Path,
 				txtNewName.Text);
 		}

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using N2.Engine;
 
 namespace N2.Definitions.Static
@@ -30,22 +29,22 @@ namespace N2.Definitions.Static
 			return GetOrCreateDefinition(contentType, null);
 		}
 
-		public ItemDefinition GetOrCreateDefinition(Type contentType, string templateName)
+		public ItemDefinition GetOrCreateDefinition(Type contentType, string templateKey)
 		{
 			if (contentType == null) throw new ArgumentNullException("contentType");
 
-			return GetDefinition(contentType, templateName)
-				?? CreateDefinition(contentType, templateName);
+			return GetDefinition(contentType, templateKey)
+				?? CreateDefinition(contentType, templateKey);
 		}
 
 		public ItemDefinition GetOrCreateDefinition(ContentItem item)
 		{
-			return GetOrCreateDefinition(item.GetContentType(), item["TemplateName"] as string);
+			return GetOrCreateDefinition(item.GetContentType(), item.TemplateKey);
 		}
 
-		private ItemDefinition GetDefinition(Type contentType, string templateName)
+		private ItemDefinition GetDefinition(Type contentType, string templateKey)
 		{
-			string key = contentType.FullName + templateName;
+			string key = contentType.FullName + templateKey;
 			ItemDefinition definition;
 			if (definitions.TryGetValue(key, out definition))
 				return definition;
@@ -53,7 +52,7 @@ namespace N2.Definitions.Static
 			return null;
 		}
 
-		private ItemDefinition CreateDefinition(Type contentType, string templateName)
+		public ItemDefinition CreateDefinition(Type contentType, string templateKey)
 		{
 			ItemDefinition definition = GetDefinition(contentType, null);
 			if (definition != null)
@@ -61,10 +60,10 @@ namespace N2.Definitions.Static
 			else
 				definition = new ItemDefinition(contentType);
 
-			definition.Template = templateName;
+			definition.TemplateKey = templateKey;
 			definition.Initialize(contentType);
 
-			SetDefinition(contentType, templateName, definition);
+			SetDefinition(contentType, templateKey, definition);
 
 			return definition;
 		}
@@ -74,11 +73,11 @@ namespace N2.Definitions.Static
 			return definitions.Values.ToList();
 		}
 
-		public void SetDefinition(Type contentType, string templateName, ItemDefinition definition)
+		public void SetDefinition(Type contentType, string templateKey, ItemDefinition definition)
 		{
 			if (contentType == null) throw new ArgumentNullException("contentType");
 
-			string key = contentType.FullName + templateName;
+			string key = contentType.FullName + templateKey;
 
 			var temp = new Dictionary<string, ItemDefinition>(definitions);
 			if (definition != null)

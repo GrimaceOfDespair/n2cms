@@ -1,10 +1,14 @@
-- ITemplateable/TemplateName in n2item
-- IRedirect
-- AttributeTransformerBase (ThreadId=250548)
-- content transformers/extractors (parse wiki)
+- contenttype from model discussions/259496
+- extend user screen (discussions/257790)
+- document security (http://n2cms.codeplex.com/discussions/257790)
+- tokens
+	- image carousel
+	- tracking link
+	- facebook like
+	- twitter
+	- youtube
 - index template replaces default
 - static parts
-- Find.Items.Where.Detail().IsNull() (ThreadId=243772)
 - fix wiki (ThreadId=243022)
 - property interception to detail collections
 - property interception avoid proceeding unecessarily

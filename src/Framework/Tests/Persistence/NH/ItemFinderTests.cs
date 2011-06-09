@@ -1,15 +1,15 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
-using NUnit.Framework;
 using N2.Collections;
+using N2.Definitions.Static;
 using N2.Persistence;
 using N2.Persistence.Finder;
 using N2.Persistence.NH;
 using N2.Persistence.NH.Finder;
 using N2.Tests.Persistence.Definitions;
 using N2.Web;
-using N2.Edit.Workflow;
-using N2.Definitions.Static;
+using NUnit.Framework;
 
 namespace N2.Tests.Persistence.NH
 {
@@ -24,6 +24,7 @@ namespace N2.Tests.Persistence.NH
 		ContentItem item1;
 		ContentItem item2;
 		ContentItem item3;
+		ContentItem[] all;
 
 		[SetUp]
 		public override void SetUp()
@@ -36,6 +37,7 @@ namespace N2.Tests.Persistence.NH
 			item1 = CreatePageBelow(startPage, 1);
 			item2 = CreatePageBelow(startPage, 2);
 			item3 = CreatePageBelow(startPage, 3);
+			all = new[] { rootItem, startPage, item1, item2, item3 };
 
 			engine.Resolve<IHost>().DefaultSite.RootItemID = rootItem.ID;
 			engine.Resolve<IHost>().DefaultSite.StartPageID = startPage.ID;
@@ -237,6 +239,13 @@ namespace N2.Tests.Persistence.NH
 			IList<ContentItem> items = finder.Where.VersionOf.Eq(rootItem).Select();
 			Assert.AreEqual(1, items.Count);
 			Assert.AreNotEqual(rootItem, items[0]);
+		}
+
+		[Test]
+		public void ByProperty_VersionOf_Null()
+		{
+			IList<ContentItem> items = finder.Where.VersionOf.Eq(null).Select();
+			Assert.AreEqual(5, items.Count);
 		}
 
 		[Test]
@@ -1131,6 +1140,62 @@ namespace N2.Tests.Persistence.NH
 		{
 			var items = finder.Where.Property("LinkPersistableProperty").In(rootItem, startPage).Select();
 			Assert.That(items.Count, Is.EqualTo(3));
+		}
+
+		[Test]
+		public void Property_Null()
+		{
+			var items = finder.Where.ZoneName.IsNull(true).Select();
+			Assert.That(items.Count, Is.EqualTo(all.Where(i => i.ZoneName == null).Count()));
+		}
+
+		[Test]
+		public void Property_NotNull()
+		{
+			var items = finder.Where.ZoneName.IsNull(false).Select();
+			Assert.That(items.Count, Is.EqualTo(all.Where(i => i.ZoneName != null).Count()));
+		}
+
+		[Test]
+		public void PersistableProperty_Null()
+		{
+			var items = finder.Where.Property("IntPersistableProperty").Null(true).Select();
+			Assert.That(items.Count, Is.EqualTo(all.Where(i => i["IntPersistableProperty"] == null).Count()));
+		}
+
+		[Test]
+		public void PersistableProperty_NotNull()
+		{
+			var items = finder.Where.Property("IntPersistableProperty").Null(false).Select();
+			Assert.That(items.Count, Is.EqualTo(all.Where(i => i["IntPersistableProperty"] != null).Count()));
+		}
+
+		[Test]
+		public void Detail_Null_ExistingDetail()
+		{
+			var items = finder.Where.Detail("IntDetail").Null<int>(true).Select();
+			Assert.That(items.Count, Is.EqualTo(all.Where(i => i["IntDetail"] == null).Count()));
+		}
+
+		[Test]
+		public void Detail_NotNull_ExistingDetail()
+		{
+			var items = finder.Where.Detail("IntDetail").Null<int>(false).Select();
+			Assert.That(items.Count, Is.EqualTo(all.Where(i => i["IntDetail"] != null).Count()));
+		}
+
+		[Test]
+		public void Detail_Null_NonExistingDetail()
+		{
+			var items = finder.Where.Detail("IntDetailXYZ").Null<int>(true).Select();
+			Assert.That(items.Count, Is.EqualTo(all.Length));
+		}
+
+		[Test]
+		public void Detail_NotNull_NonExistingDetail()
+		{
+			var items = finder.Where.Detail("IntDetailXYZ").Null<int>(false).Select();
+			Assert.That(items.Count, Is.EqualTo(0));
 		}
 
 		#region Helpers

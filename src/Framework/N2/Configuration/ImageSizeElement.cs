@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Configuration;
+﻿using System.Configuration;
 using N2.Web.Drawing;
 
 namespace N2.Configuration
@@ -23,6 +19,14 @@ namespace N2.Configuration
 		{
 			get { return (int)base["height"]; }
 			set { base["height"] = value; }
+		}
+
+		/// <summary>Maximum height of images resized to this size.</summary>
+		[ConfigurationProperty("quality", DefaultValue = 90)]
+		public int Quality
+		{
+			get { return (int)base["quality"]; }
+			set { base["quality"] = value; }
 		}
 
 		/// <summary>Replace existing file when creating this image size.</summary>

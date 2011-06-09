@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using N2.Engine;
-using N2.Tests.Fakes;
 
 namespace N2.Tests
 {
@@ -13,7 +9,7 @@ namespace N2.Tests
 			var config = System.Configuration.ConfigurationManager.OpenExeConfiguration(System.Configuration.ConfigurationUserLevel.None);
 
 			IEngine engine = new ContentEngine();
-			engine.AddComponentInstance(typeof(IServiceContainer).FullName, typeof(IServiceContainer), engine.Container);
+			engine.Container.AddComponentInstance(typeof(IServiceContainer).FullName, typeof(IServiceContainer), engine.Container);
 			engine.Container.StartComponents();
 			//var cache = engine.Container.Resolve<N2.Engine.StructureBoundCache<N2.Engine.Globalization.LanguageInfo>>();
 			var cache = engine.Container.Resolve<N2.Tests.Engine.Services.DependingGenericSelfService<string>>();

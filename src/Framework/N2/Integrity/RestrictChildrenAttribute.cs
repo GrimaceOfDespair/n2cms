@@ -1,6 +1,6 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using N2.Definitions;
 
 namespace N2.Integrity
@@ -55,7 +55,7 @@ namespace N2.Integrity
 		public AllowedDefinitionResult IsAllowed(AllowedDefinitionQuery context)
 		{
 			if (IsAssignable(context.ChildDefinition.ItemType))
-				if(TemplateNames == null || TemplateNames.Contains(context.ChildDefinition.Template))
+				if(TemplateNames == null || TemplateNames.Contains(context.ChildDefinition.TemplateKey))
 					return AllowedDefinitionResult.Allow;
 			
 			return AllowedDefinitionResult.Deny;

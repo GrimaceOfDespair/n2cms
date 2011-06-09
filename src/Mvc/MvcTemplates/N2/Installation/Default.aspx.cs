@@ -1,19 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
+using System.Reflection;
+using System.Web;
+using System.Web.Configuration;
 using System.Web.Hosting;
+using System.Web.Security;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using N2.Definitions;
-using N2.Installation;
-using System.Web;
-using System.IO;
-using System.Web.Configuration;
 using N2.Configuration;
+using N2.Definitions;
 using N2.Edit.Installation;
-using System.Web.Security;
 using N2.Engine;
-using System.Reflection;
+using N2.Installation;
 
 namespace N2.Edit.Install
 {
@@ -203,6 +203,7 @@ namespace N2.Edit.Install
 				if (startPage.ID == Status.StartPageID && root.ID == Status.RootItemID)
 				{
 					ltRootNode.Text = "<span class='ok'>Root and start pages inserted.</span>";
+					Installer.UpdateStatus(SystemStatusLevel.UpAndRunning);
 				}
 				else
 				{
@@ -239,6 +240,7 @@ namespace N2.Edit.Install
 					phSame.Visible = false;
 					phDiffer.Visible = false;
 					RootId = root.ID;
+					Installer.UpdateStatus(SystemStatusLevel.UpAndRunning);
 				}
 				else
 				{
@@ -295,6 +297,7 @@ namespace N2.Edit.Install
 			if (ExecuteWithErrorHandling(SaveConfiguration) == null)
 			{
 				lblWebConfigUpdated.Text = "Configuration updated.";
+				status = null;
 			}
 		}
 
@@ -307,6 +310,7 @@ namespace N2.Edit.Install
 			host.StartPageID = StartId;
 
 			cfg.Save();
+			Installer.UpdateStatus(SystemStatusLevel.UpAndRunning);
 		}
 
 		protected void btnRestart_Click(object sender, EventArgs e)
@@ -368,12 +372,13 @@ namespace N2.Edit.Install
 			// try to find a suitable start page
 			foreach (ContentItem item in root.Children)
 			{
-				ItemDefinition id = N2.Context.Definitions.GetDefinition(item);
+				ItemDefinition id = Engine.Definitions.GetDefinition(item);
 				if (InstallationManager.Is(id.Installer, InstallerHint.PreferredStartPage))
 				{
 					if (item.ID == Status.StartPageID && root.ID == Status.RootItemID)
 					{
 						ltRootNode.Text = "<span class='ok'>Root and start page inserted.</span>";
+						Installer.UpdateStatus(SystemStatusLevel.UpAndRunning);
 					}
 					else
 					{
@@ -388,6 +393,7 @@ namespace N2.Edit.Install
 				}
 				phDiffer.DataBind();
 			}
+			
 		}
 
 		public delegate void Execute();

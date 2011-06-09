@@ -1,16 +1,15 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Web;
 using System.Web.UI.WebControls;
 using N2.Definitions;
 using N2.Edit.Web;
-using N2.Security;
-using N2.Web;
-using N2.Web.UI.WebControls;
 using N2.Edit.Workflow;
 using N2.Persistence;
 using N2.Persistence.Finder;
-using System.Web;
+using N2.Security;
+using N2.Web;
+using N2.Web.UI.WebControls;
 
 namespace N2.Edit
 {
@@ -262,7 +261,7 @@ namespace N2.Edit
 			{
 				ItemDefinition definition = Definitions.GetDefinition(ie.CurrentItemType);
 				string definitionTitle = GetGlobalResourceString("Definitions", definition.Discriminator + ".Title") ?? definition.Title;
-				string format = GetLocalResourceString("EditPage.TitleFormat.New");
+				string format = GetLocalResourceString("EditPage.TitleFormat.New", "New \"{0}\"");
 				
 				string template = Request["template"];
 				if (!string.IsNullOrEmpty(template))
@@ -276,7 +275,7 @@ namespace N2.Edit
 			}
 			else
 			{
-				string format = GetLocalResourceString("EditPage.TitleFormat.Update");
+				string format = GetLocalResourceString("EditPage.TitleFormat.Update", "Edit \"{0}\"");
 				Title = string.Format(format, ie.CurrentItem.Title);
 			}
 		}
@@ -291,19 +290,7 @@ namespace N2.Edit
 			
 			if (!string.IsNullOrEmpty(discriminator))
 			{
-				var definition = Definitions.GetDefinition(discriminator);
-				if (!string.IsNullOrEmpty(template))
-				{
-					var info = Definitions.GetTemplate(definition.ItemType, template);
-					ie.Definition = info.Definition;
-					ie.CurrentItem = info.Template();
-					ie.CurrentItem.Parent = Selection.SelectedItem;
-				}
-				else
-				{
-					ie.Discriminator = definition.Discriminator;
-					ie.ParentPath = Selection.SelectedItem.Path;
-				}
+				ie.Initialize(discriminator, template, Selection.SelectedItem);
 			}
 			else if (!string.IsNullOrEmpty(dataType))
 			{
@@ -330,9 +317,8 @@ namespace N2.Edit
 
 		private void LoadZones()
 		{
-			Type itemType = ie.CurrentItemType;
 			ucZones.CurrentItem = ie.CurrentItem;
-			ItemDefinition definition = N2.Context.Definitions.GetDefinition(itemType);
+			ItemDefinition definition = Engine.Definitions.GetDefinition(ie.CurrentItem);
 			ucZones.LoadZonesOf(definition, ie.CurrentItem);
 		}
 

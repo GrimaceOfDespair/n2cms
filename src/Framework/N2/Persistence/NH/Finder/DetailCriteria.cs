@@ -1,4 +1,3 @@
-using System;
 using N2.Persistence.Finder;
 
 namespace N2.Persistence.NH.Finder
@@ -62,13 +61,13 @@ namespace N2.Persistence.NH.Finder
 
 		public IQueryAction Like(string value)
 		{
-			query.Criterias.Add(new DetailHqlProvider<string>(op, name, Comparison.Like, value));
+			query.Criterias.Add(new DetailHqlProvider<string>(op, name, Comparison.Like, value ?? ""));
 			return query;
 		}
 
 		public IQueryAction NotLike(string value)
 		{
-			query.Criterias.Add(new DetailHqlProvider<string>(op, name, Comparison.NotLike, value));
+			query.Criterias.Add(new DetailHqlProvider<string>(op, name, Comparison.NotLike, value ?? ""));
 			return query;
 		}
 
@@ -77,6 +76,13 @@ namespace N2.Persistence.NH.Finder
 			query.Criterias.Add(new DetailInHqlProvider<T>(op, name, values));
 			return query;
 		}
+
+		public IQueryAction Null<T>(bool isNull)
+		{
+			query.Criterias.Add(new DetailNullHqlProvider<T>(op, name, isNull));
+			return query;
+		}
+
 		#endregion
 	}
 }

@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using N2.Engine;
-using N2.Web;
-using N2.Persistence;
-using N2;
-using N2.Definitions;
-using N2.Details;
-using N2.Edit;
 using System.Security.Principal;
+using N2.Definitions;
 using N2.Definitions.Static;
+using N2.Edit;
+using N2.Engine;
+using N2.Persistence;
 
 namespace N2.Management.Content.Templates
 {
@@ -32,13 +27,13 @@ namespace N2.Management.Content.Templates
 
 		#region ITemplateRepository Members
 
-		public TemplateDefinition GetTemplate(string templateName)
+		public TemplateDefinition GetTemplate(string templateKey)
 		{
 			TemplateContainer templates = container.GetBelowRoot();
 			if (templates == null)
 				return null;
 
-			var template = templates.GetChild(templateName);
+			var template = templates.GetChild(templateKey);
 			return CreateTemplateInfo(template);
 		}
 
@@ -57,7 +52,7 @@ namespace N2.Management.Content.Templates
 					clone.SetDetail(TemplateDescription, null, typeof(string));
 					clone.Title = "";
 					clone.Name = null;
-					clone["TemplateName"] = template.Name;
+					clone.TemplateKey = template.Name;
 					return clone;
 				},
 				Original = () => template
@@ -105,13 +100,13 @@ namespace N2.Management.Content.Templates
 			persister.Save(templateItem);
 		}
 
-		public void RemoveTemplate(string templateName)
+		public void RemoveTemplate(string templateKey)
 		{
 			TemplateContainer templates = container.GetBelowRoot();
 			if (templates == null)
 				return;
 
-			ContentItem template = templates.GetChild(templateName);
+			ContentItem template = templates.GetChild(templateKey);
 			if (template == null)
 				return;
 

@@ -1,13 +1,13 @@
 using System;
+using System.Resources;
+using System.Security.Principal;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using System.Resources;
+using N2.Engine;
 using N2.Resources;
 using N2.Security;
 using N2.Web;
-using N2.Engine;
-using System.Security.Principal;
 
 namespace N2.Edit.Web
 {
@@ -243,10 +243,18 @@ namespace N2.Edit.Web
 		#endregion
 
 		#region Get Resource Methods
-		protected string GetLocalResourceString(string resourceKey)
+		protected string GetLocalResourceString(string resourceKey, string defaultText = null)
 		{
-			return (string)GetLocalResourceObject(resourceKey);
+			try
+			{
+				return (string)GetLocalResourceObject(resourceKey);
+			}
+			catch (InvalidOperationException)
+			{
+				return defaultText;
+			}
 		}
+
 		protected string GetGlobalResourceString(string className, string resourceKey)
 		{
             try
@@ -266,7 +274,7 @@ namespace N2.Edit.Web
 		{
 			Trace.Write(ex.ToString());
 
-			string message = string.Format(GetLocalResourceString("NameOccupiedExceptionFormat"),
+			string message = string.Format(GetLocalResourceString("NameOccupiedExceptionFormat", "An item named \"{0}\" already exists below \"{1}\""),
 				ex.SourceItem.Name,
 				ex.DestinationItem.Name);
 			SetErrorMessage(validator, message);
@@ -276,7 +284,7 @@ namespace N2.Edit.Web
 		{
 			Trace.Write(ex.ToString());
 
-			string message = string.Format(GetLocalResourceString("DestinationOnOrBelowItselfExceptionFormat"),
+			string message = string.Format(GetLocalResourceString("DestinationOnOrBelowItselfExceptionFormat", "Cannot move an item to a destination onto or below itself"),
 				ex.SourceItem.Name,
 				ex.DestinationItem.Name);
 			SetErrorMessage(validator, message);
@@ -285,7 +293,7 @@ namespace N2.Edit.Web
 		{
 			Trace.Write(ex.ToString());
 
-			string message = string.Format(GetLocalResourceString("NotAllowedParentExceptionFormat"),
+			string message = string.Format(GetLocalResourceString("NotAllowedParentExceptionFormat", "The item of type \"{0}\" isn't allowed below a destination of type \"{1}\""),
 				ex.ItemDefinition.Title,
 				Engine.Definitions.GetDefinition(ex.ParentType).Title);
 			SetErrorMessage(validator, message);

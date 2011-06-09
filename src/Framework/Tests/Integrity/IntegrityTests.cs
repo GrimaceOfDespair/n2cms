@@ -1,22 +1,18 @@
 using System;
-using System.Reflection;
+using System.Linq;
 using N2.Configuration;
-using NUnit.Framework;
 using N2.Definitions;
-using N2.Details;
+using N2.Definitions.Static;
 using N2.Engine;
 using N2.Integrity;
 using N2.Persistence;
+using N2.Persistence.Proxying;
+using N2.Tests.Fakes;
 using N2.Tests.Integrity.Definitions;
 using N2.Web;
-using N2.Web.UI;
+using NUnit.Framework;
 using Rhino.Mocks;
 using Rhino.Mocks.Interfaces;
-using N2.Tests.Fakes;
-using System.Linq;
-using N2.Persistence.Proxying;
-using N2.Definitions.Static;
-using N2.Edit.Workflow;
 
 namespace N2.Tests.Integrity
 {
@@ -47,7 +43,7 @@ namespace N2.Tests.Integrity
 			parser = mocks.StrictMock<IUrlParser>();
 
 			ITypeFinder typeFinder = CreateTypeFinder();
-			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection());
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection());
 			IItemNotifier notifier = mocks.DynamicMock<IItemNotifier>();
 			mocks.Replay(notifier);
 			var changer = new N2.Edit.Workflow.StateChanger();
@@ -395,25 +391,23 @@ namespace N2.Tests.Integrity
 		}
 
 		[Test]
-		public void CannotSaveUnallowedItem()
+		public void CanSave_UnallowedItem()
 		{
 			IntegrityPage page = CreateOneItem<IntegrityPage>(1, "John", null);
 			IntegrityStartPage startPage = CreateOneItem<IntegrityStartPage>(2, "Leonidas", page);
 
 			bool canSave = integrityManger.CanSave(startPage);
-			Assert.IsFalse(canSave, "Could save even though the start page isn't below a page.");
+			Assert.IsTrue(canSave);
 		}
 
 		[Test]
-		public void CannotSaveUnallowedItemEvent()
+		public void CanSave_UnallowedItemEvent()
 		{
 			IntegrityPage page = CreateOneItem<IntegrityPage>(1, "John", null);
 			IntegrityStartPage startPage = CreateOneItem<IntegrityStartPage>(2, "Leonidas", page);
 
-			ExceptionAssert.Throws<NotAllowedParentException>(delegate
-			{
-				saving.Raise(persister, new CancellableItemEventArgs(startPage));
-			});
+
+			Assert.DoesNotThrow(() => saving.Raise(persister, new CancellableItemEventArgs(startPage)));
 		}
 
 		#endregion

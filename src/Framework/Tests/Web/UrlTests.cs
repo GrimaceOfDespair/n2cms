@@ -1,8 +1,7 @@
 ﻿using N2.Engine;
 using N2.Tests.Fakes;
-using NUnit.Framework;
 using N2.Web;
-using System.Web;
+using NUnit.Framework;
 
 namespace N2.Tests.Web
 {
@@ -251,6 +250,22 @@ namespace N2.Tests.Web
 			Url u = "/";
 			u = u.SetQueryParameter("key", null, true);
 			Assert.That(u.Query, Is.Null);
+		}
+
+		[Test]
+		public void CanRemoveQuery()
+		{
+			Url u = "/?key=value&key2=value2";
+			u = u.RemoveQuery("key");
+			Assert.That(u.ToString(), Is.EqualTo("/?key2=value2"));
+		}
+
+		[Test]
+		public void CanRemoveQuery2()
+		{
+			Url u = "/?key=value&key2=value2";
+			u = u.RemoveQuery("key2");
+			Assert.That(u.ToString(), Is.EqualTo("/?key=value"));
 		}
 
 		[Test]
@@ -912,7 +927,7 @@ namespace N2.Tests.Web
                 var engine = new FakeEngine();
                 var webContext = new FakeWebContextWrapper();
                 webContext.isWeb = true;
-                engine.AddComponentInstance("", typeof(IWebContext), webContext);
+				engine.Container.AddComponentInstance("", typeof(IWebContext), webContext);
                 Singleton<IEngine>.Instance = engine;
 
                 webContext.Url = "http://site1/app";
@@ -937,7 +952,7 @@ namespace N2.Tests.Web
                 var engine = new FakeEngine();
                 var webContext = new FakeWebContextWrapper();
                 webContext.isWeb = true;
-                engine.AddComponentInstance("", typeof (IWebContext), webContext);
+				engine.Container.AddComponentInstance("", typeof(IWebContext), webContext);
                 Singleton<IEngine>.Instance = engine;
 
                 webContext.Url = "http://site1/app";

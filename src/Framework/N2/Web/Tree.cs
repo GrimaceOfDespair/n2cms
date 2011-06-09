@@ -1,12 +1,10 @@
-using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Web.UI;
-using System.Web.UI.HtmlControls;
 using N2.Collections;
-using N2.Persistence.NH.Finder;
 using N2.Web.UI.WebControls;
-using System.IO;
+using System;
 
 namespace N2.Web
 {
@@ -14,6 +12,9 @@ namespace N2.Web
 	/// Creates a hierarchical tree of ul and li:s for usage on web pages.
 	/// </summary>
 	public class Tree
+#if NET4
+		: System.Web.IHtmlString
+#endif
 	{
 		private HierarchyNode<ContentItem> root;
 
@@ -88,13 +89,13 @@ namespace N2.Web
 
 		public static Tree From(ContentItem root)
 		{
-			Tree t = new Tree(new TreeHierarchyBuilder(root));
+			Tree t = Using(new TreeHierarchyBuilder(root));
 			return t;
 		}
 
 		public static Tree From(ContentItem root, int depth)
 		{
-			Tree t = new Tree(new TreeHierarchyBuilder(root, depth));
+			Tree t = Using(new TreeHierarchyBuilder(root, depth));
 			return t;
 		}
 
@@ -106,12 +107,24 @@ namespace N2.Web
 		public static Tree Between(ContentItem initialItem, ContentItem lastAncestor, bool appendAdditionalLevel, int startingDepth)
 		{
 			lastAncestor = Find.AtLevel(initialItem, lastAncestor, startingDepth);
-			return new Tree(new BranchHierarchyBuilder(initialItem, lastAncestor ?? initialItem, lastAncestor != null && appendAdditionalLevel));
+			return Using(new BranchHierarchyBuilder(initialItem, lastAncestor ?? initialItem, lastAncestor != null && appendAdditionalLevel));
 		}
 
 		public static Tree Between(ContentItem initialItem, ContentItem lastAncestor, bool appendAdditionalLevel)
 		{
-			return new Tree(new BranchHierarchyBuilder(initialItem, lastAncestor, appendAdditionalLevel));
+			return Using(new BranchHierarchyBuilder(initialItem, lastAncestor, appendAdditionalLevel));
+		}
+
+		public static Tree Using(HierarchyBuilder hierarchy)
+		{
+			return TreeFactory(hierarchy);
+		}
+
+		public static Func<HierarchyBuilder, Tree> TreeFactory { get; set; }
+
+		static Tree()
+		{
+			TreeFactory = (hierarchy) => new Tree(hierarchy);
 		}
 
 		#endregion
@@ -151,5 +164,14 @@ namespace N2.Web
 			}
 			return node;
 		}
+
+		#region IHtmlString Members
+
+		public string ToHtmlString()
+		{
+			return ToString();
+		}
+
+		#endregion
 	}
 }

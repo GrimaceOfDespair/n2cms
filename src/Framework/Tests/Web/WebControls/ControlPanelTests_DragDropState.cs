@@ -1,9 +1,8 @@
 ﻿using System.Linq;
-using System.Web.UI;
+using System.Web;
 using System.Xml.Linq;
 using N2.Web.UI.WebControls;
 using NUnit.Framework;
-using System.Web;
 
 namespace N2.Tests.Web.WebControls
 {
@@ -23,7 +22,7 @@ namespace N2.Tests.Web.WebControls
 		{
 			N2.Context.Current.Definitions.GetDefinitions();
 
-            Zone z = new DroppableZone().AddedToFakePage(HttpContext.Current);
+			Zone z = new DroppableZone().AddedToFakePage(HttpContext.Current, page);
 			z.CurrentItem = page;
 			z.ZoneName = ZoneName;
 

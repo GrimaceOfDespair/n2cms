@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using N2.Engine;
+﻿using N2.Engine;
 
 namespace N2.Tests.Engine.Services
 {
@@ -117,6 +113,11 @@ namespace N2.Tests.Engine.Services
 
 	[Service(typeof(IService))]
 	public class InterfacedService : IService
+	{
+	}
+
+	[Service(typeof(IService), Replaces = typeof(InterfacedService))]
+	public class ReplacingService : IService
 	{
 	}
 

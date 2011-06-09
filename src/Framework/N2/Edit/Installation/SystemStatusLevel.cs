@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace N2.Edit.Installation
+﻿namespace N2.Edit.Installation
 {
 	public enum SystemStatusLevel
 	{
@@ -13,6 +8,7 @@ namespace N2.Edit.Installation
 		OldVersion = 3,
 		NoRootNode = 4,
 		NoStartNode = 5,
+		Unconfirmed = 88,
 		UpAndRunning = 99
 	}
 }

@@ -21,16 +21,14 @@
 #endregion
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Linq;
 using System.Security.Principal;
-using N2.Definitions.Static;
 using N2.Details;
 using N2.Installation;
 using N2.Integrity;
-using N2.Web.UI;
 using N2.Web;
+using N2.Web.UI;
 
 namespace N2.Definitions
 {
@@ -74,6 +72,7 @@ namespace N2.Definitions
 			Containers = new List<IEditableContainer>();
 			EditableModifiers = new List<EditorModifierAttribute>();
 			Displayables = new List<IDisplayable>();
+			NamedOperators = new List<IUniquelyNamed>();
 			IsPage = true;
 			Enabled = true;
 			AllowedIn = AllowedZones.None;
@@ -84,7 +83,7 @@ namespace N2.Definitions
 		#region Properties
 
 		/// <summary>Variant of an item with the same discriminator.</summary>
-		public string Template { get; set; }
+		public string TemplateKey { get; set; }
 
 		/// <summary>Discriminator of an item this item is related to.</summary>
 		public string RelatedTo { get; set; }
@@ -147,9 +146,6 @@ namespace N2.Definitions
 		/// <summary>Gets or sets containers defined for the item.</summary>
 		public IList<IEditableContainer> Containers { get; private set; }
 
-		///// <summary>Gets or sets the root container used to build the edit interface.</summary>
-		//public IEditableContainer RootContainer { get; private set; }
-
 		/// <summary>Gets or sets all editor modifier attributes for this item.</summary>
 		public IList<EditorModifierAttribute> EditableModifiers { get; private set; }
 
@@ -166,6 +162,9 @@ namespace N2.Definitions
 		/// <summary>Gets or sets displayable attributes defined for the item.</summary>
 		public IList<IDisplayable> Displayables { get; private set; }
 
+		/// <summary>Named items associated to a property.</summary>
+		public IList<IUniquelyNamed> NamedOperators { get; private set; }
+
 		public AllowedZones AllowedIn { get; set; }
 
 		/// <summary>Filters allowed definitions below this definition.</summary>
@@ -181,16 +180,7 @@ namespace N2.Definitions
 		/// <summary>Gets or sets additional child types allowed below this item.</summary>
 		public IEnumerable<ItemDefinition> GetAllowedChildren(IDefinitionManager definitions, ContentItem parentItem)
 		{
-			IEnumerable<ItemDefinition> all = definitions.GetDefinitions().ToList();
-			foreach (var d in all)
-			{
-				var ctx = new AllowedDefinitionQuery { Parent = parentItem, ParentDefinition = this, ChildDefinition = d, Definitions = definitions };
-				var filters = AllowedChildFilters.Union(d.AllowedParentFilters).ToList();
-				if (filters.Any(f => f.IsAllowed(ctx) == AllowedDefinitionResult.Allow))
-					yield return d;
-				else if (!filters.Any(f => f.IsAllowed(ctx) == AllowedDefinitionResult.Deny))
-					yield return d;
-			}
+			return definitions.GetDefinitions().AllowedBelow(this, parentItem, definitions);
 		}
 
 		public bool IsChildAllowed(IDefinitionManager definitions, ItemDefinition itemDefinition)
@@ -219,17 +209,6 @@ namespace N2.Definitions
 
 			return AllowedZoneNames.Contains(zoneName);
 		}
-
-		///// <summary>Gets editable attributes available to user.</summary>
-		///// <returns>A filtered list of editable fields.</returns>
-		//public IList<IEditable> GetEditables(IPrincipal user)
-		//{
-		//    var filteredList = new List<IEditable>();
-		//    foreach (IEditable e in Editables)
-		//        if (e.IsAuthorized(user))
-		//            filteredList.Add(e);
-		//    return filteredList;
-		//}
 
 		/// <summary>Gets the editor modifications for the specified detail name.</summary>
 		/// <param name="detailName"></param>
@@ -307,6 +286,8 @@ namespace N2.Definitions
 					Displayables.AddOrReplace(containable as IDisplayable);
 				if (containable is IContentTransformer)
 					ContentTransformers.Add(containable as IContentTransformer);
+				
+				NamedOperators.Add(containable);
 			}
 		}
 
@@ -318,10 +299,7 @@ namespace N2.Definitions
 
 		public IEnumerable<IUniquelyNamed> GetNamed(string name)
 		{
-			return Editables.Where(e => e.Name == name).OfType<IUniquelyNamed>()
-				.Union(Containers.Where(c => c.Name == name).OfType<IUniquelyNamed>())
-				.Union(Displayables.Where(d => d.Name == name).OfType<IUniquelyNamed>())
-				.ToList();
+			return NamedOperators.Where(o => o.Name == name).ToList();
 		}
 
 		public void Remove(IUniquelyNamed containable)
@@ -341,6 +319,8 @@ namespace N2.Definitions
 					Displayables.Remove(containable as IDisplayable);
 				if (containable is IContentTransformer)
 					ContentTransformers.Remove(containable as IContentTransformer);
+
+				NamedOperators.Remove(containable);
 			}
 		}
 
@@ -376,7 +356,12 @@ namespace N2.Definitions
 
 		public override string ToString()
 		{
-			return Discriminator + (Template != null ? "/" + Template : null);
+			return GetDiscriminatorWithTemplateKey();
+		}
+
+		public string GetDiscriminatorWithTemplateKey()
+		{
+			return Discriminator + (TemplateKey != null ? "/" + TemplateKey : null);
 		}
 
 		public override int GetHashCode()
@@ -392,7 +377,7 @@ namespace N2.Definitions
 			if (id == null)
 				return false;
 
-			return Discriminator == id.Discriminator && Template == id.Template;
+			return Discriminator == id.Discriminator && TemplateKey == id.TemplateKey;
 		}
 
 		#endregion
@@ -422,7 +407,7 @@ namespace N2.Definitions
 			id.NumberOfItems = 0;
 			id.RelatedTo = RelatedTo;
 			id.SortOrder = SortOrder;
-			id.Template = Template;
+			id.TemplateKey = TemplateKey;
 			id.Title = Title;
 			id.ToolTip = ToolTip;
 			return id;
@@ -434,6 +419,14 @@ namespace N2.Definitions
 		}
 
 		#endregion
+
+		public bool IsAllowed(string zoneName, IPrincipal user)
+		{
+			return IsDefined
+				&& Enabled
+				&& IsAllowedInZone(zoneName)
+				&& IsAuthorized(user);
+		}
 	}
 
 	public static class CollectionExtensions

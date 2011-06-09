@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
+﻿using N2.Persistence.Search;
 namespace N2.Definitions
 {
 	/// <summary>
 	/// Marks a page containing text content.
 	/// </summary>
+	[SearchableType]
 	public interface IContentPage : IPage
 	{
 		/// <summary>The title of the page.</summary>

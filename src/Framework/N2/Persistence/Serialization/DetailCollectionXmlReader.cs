@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Xml.XPath;
 using N2.Details;
 
@@ -8,6 +7,8 @@ namespace N2.Persistence.Serialization
 {
 	public class DetailCollectionXmlReader : XmlReader, IXmlReader
 	{
+		DetailXmlReader detailReader = new DetailXmlReader();
+
 		public void Read(XPathNavigator navigator, ContentItem item, ReadingJournal journal)
 		{
 			foreach (XPathNavigator detailCollectionElement in EnumerateChildren(navigator))
@@ -32,14 +33,7 @@ namespace N2.Persistence.Serialization
 			Dictionary<string, string> attributes = GetAttributes(navigator);
 			Type type = Utility.TypeFromName(attributes["typeName"]);
 
-			if (type != typeof(ContentItem))
-			{
-				collection.Add(ContentDetail.New(
-					collection.EnclosingItem,
-					attributes["name"],
-					Parse(navigator.Value, type)));
-			}
-			else
+			if (type == typeof(ContentItem))
 			{
 				int referencedItemID = int.Parse(navigator.Value);
 				ContentItem referencedItem = journal.Find(referencedItemID);
@@ -63,6 +57,17 @@ namespace N2.Persistence.Serialization
 										}
 									};
 				}
+			}
+			else if (type == typeof(IMultipleValue))
+			{
+				detailReader.ReadMultipleValue(navigator, collection.EnclosingItem, journal, collection.Name).AddTo(collection);
+			}
+			else
+			{
+				collection.Add(ContentDetail.New(
+					collection.EnclosingItem,
+					attributes["name"],
+					Parse(navigator.Value, type)));
 			}
 		}
 

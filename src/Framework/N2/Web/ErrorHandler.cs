@@ -6,10 +6,10 @@ using System.Web;
 using N2.Configuration;
 using N2.Edit.Installation;
 using N2.Engine;
+using N2.Plugin;
 using N2.Security;
 using N2.Web.Mail;
 using NHibernate;
-using N2.Plugin;
 
 namespace N2.Web
 {
@@ -178,8 +178,8 @@ namespace N2.Web
 		{
 			string url = Url.Parse(fixClassUrl).ResolveTokens().AppendQuery("id", wex.Identifier);
 			Trace.WriteLine("Redirecting to '" + url + "' to fix exception: " + wex);
-			context.ClearError();
-			context.Response.Redirect(url);
+			context.HttpContext.ClearError();
+			context.HttpContext.Response.Redirect(url);
 		}
 
 		private static string FormatError(Exception ex)

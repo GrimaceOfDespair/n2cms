@@ -1,13 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Web.Mvc;
+﻿using System.Web.Mvc;
 
 namespace N2.Web.Mvc.Html
 {
 	public static class ContentHtmlExtensions
 	{
+		// content helper
+
+		public static ViewContentHelper Content(this HtmlHelper html)
+		{
+			string key = "ContentHelperOf" + html.GetHashCode();
+			var content = html.ViewContext.ViewData[key] as ViewContentHelper;
+			if (content == null)
+				html.ViewContext.ViewData[key] = content = new ViewContentHelper(html);
+			return content;
+		}
+
 		public static bool HasValue(this HtmlHelper html, string detailName)
 		{
 			var item = html.CurrentItem();

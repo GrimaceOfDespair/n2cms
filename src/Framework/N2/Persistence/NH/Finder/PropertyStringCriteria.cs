@@ -1,4 +1,3 @@
-using System;
 using N2.Persistence.Finder;
 
 namespace N2.Persistence.NH.Finder
@@ -15,6 +14,17 @@ namespace N2.Persistence.NH.Finder
 			this.query = query;
 			this.name = name;
 		}
+
+		#region ICriteria<string> Members
+
+		public IQueryAction IsNull(bool isNull)
+		{
+			query.Criterias.Add(new PropertyIsNullHqlProvider<string>(op, name, !isNull));
+
+			return query;
+		}
+
+		#endregion
 
 		#region IStringCriteria Members
 

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Xml;
 using N2.Definitions;
-using N2.Web;
 using N2.Engine;
+using N2.Web;
 
 namespace N2.Persistence.Serialization
 {
@@ -54,6 +54,7 @@ namespace N2.Persistence.Serialization
 			yield return new DetailCollectionXmlWriter();
 			yield return new ChildXmlWriter();
 			yield return new AuthorizationXmlWriter();
+			yield return new PersistablePropertyXmlWriter(definitions);
             if ((options & ExportOptions.ExcludeAttachments) == ExportOptions.Default)
 			    yield return new AttachmentXmlWriter();
         }
@@ -65,6 +66,10 @@ namespace N2.Persistence.Serialization
 			itemElement.WriteAttribute("parent", item.Parent != null ? item.Parent.ID.ToString() : string.Empty);
 			itemElement.WriteAttribute("title", item.Title);
 			itemElement.WriteAttribute("zoneName", item.ZoneName);
+			itemElement.WriteAttribute("templateKey", item.TemplateKey);
+			if (item.TranslationKey.HasValue)
+				itemElement.WriteAttribute("translationKey", item.TranslationKey.Value);
+			itemElement.WriteAttribute("state", (int)item.State);
 			itemElement.WriteAttribute("created", item.Created);
 			itemElement.WriteAttribute("updated", item.Updated);
 			itemElement.WriteAttribute("published", item.Published);

@@ -1,0 +1,8 @@
+﻿@if(Request.IsAuthenticated) 
+{
+	<a href="@Url.Action("LogOff", "Account")">Log off <strong>@Context.User.Identity.Name</strong></a>
+}
+else
+{
+	@Html.ActionLink("Log on", "LogOn", new { controller = "Account", returnUrl = Request["returnUrl"] ?? (Content.Path.IsEmpty() ? Content.Traverse.StartPage.Url : Content.Path.CurrentPage.Url) })
+}

@@ -1,12 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using N2.Configuration;
 using N2.Tests.Web.Items;
-using NUnit.Framework;
-using N2.Persistence;
 using N2.Web;
+using NUnit.Framework;
 
 namespace N2.Tests.Web
 {
@@ -68,7 +63,7 @@ namespace N2.Tests.Web
         public void PagesOutsideStartPage_AreReferenced_ThroughTheirRewrittenUrl()
         {
             host = new Host(wrapper, 10, 1);
-            parser = new UrlParser(persister, wrapper, host, new HostSection());
+			parser = TestSupport.Setup(persister, wrapper, host);
 
             CreateDefaultStructure();
             ContentItem root = CreateOneItem<PageItem>(10, "root", null);

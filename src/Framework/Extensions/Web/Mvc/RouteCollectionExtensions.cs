@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Web.Mvc;
 using System.Web.Routing;
 using N2.Engine;
-using System.Web.Mvc;
 
 namespace N2.Web.Mvc
 {
@@ -21,7 +18,7 @@ namespace N2.Web.Mvc
 		public static ContentRoute MapContentRoute(this RouteCollection routes, string name, IEngine engine)
 		{
 			var cr = new ContentRoute(engine);
-			routes.Add(name, cr);
+			routes.Insert(0, cr);
 			return cr;
 		}
 
@@ -61,7 +58,7 @@ namespace N2.Web.Mvc
 			}
 
 			var cr = new ContentRoute(engine, rh, null, innerRoute);
-			routes.Add(name, cr);
+			routes.Insert(0, cr);
 			return cr;
 		}
 
@@ -77,7 +74,7 @@ namespace N2.Web.Mvc
 			where T : ContentItem
 		{
 			var cr = new ContentRoute<T>(engine);
-			routes.Add(name, cr);
+			routes.Insert(0, cr);
 			return cr;
 		}
 
@@ -122,7 +119,7 @@ namespace N2.Web.Mvc
 			}
 
 			var cr = new ContentRoute<T>(engine, rh, null, innerRoute);
-			routes.Add(name, cr);
+			routes.Insert(0, cr);
 			return cr;
 		}
 	}

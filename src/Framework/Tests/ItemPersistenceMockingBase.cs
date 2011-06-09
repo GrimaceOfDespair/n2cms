@@ -1,11 +1,8 @@
 using System;
-using N2.Details;
 using N2.Persistence;
-using N2.Persistence.NH;
-using NUnit.Framework;
-using Rhino.Mocks;
-using Rhino.Mocks.Interfaces;
 using N2.Tests.Fakes;
+using NUnit.Framework;
+using Rhino.Mocks.Interfaces;
 
 namespace N2.Tests
 {
@@ -28,14 +25,10 @@ namespace N2.Tests
 
 		protected virtual IPersister CreatePersister()
 		{
-			repository = new Fakes.FakeRepository<ContentItem>();
-
-			var linkRepository = mocks.Stub<INHRepository<int, ContentDetail>>();
-			linkRepository.Replay();
-			var finder = mocks.Stub<N2.Persistence.Finder.IItemFinder>();
-			finder.Replay();
-
-			return persister = new ContentPersister(repository, linkRepository, finder);
+			persister = TestSupport.SetupFakePersister();
+			repository = (FakeRepository<ContentItem>)persister.Repository;
+			
+			return persister;
 		}
 
 		protected override T CreateOneItem<T>(int itemID, string name, ContentItem parent)

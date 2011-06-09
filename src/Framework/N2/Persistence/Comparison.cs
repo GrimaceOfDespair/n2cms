@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace N2.Persistence
 {
 	public enum Comparison
@@ -13,6 +9,8 @@ namespace N2.Persistence
 		GreaterOrEqual,
 		LessOrEqual,
 		Like,
-		NotLike
+		NotLike,
+		Null,
+		NotNull
 	}
 }

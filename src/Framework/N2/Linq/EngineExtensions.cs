@@ -1,9 +1,9 @@
 ﻿using System.Linq;
-using N2.Engine;
-using N2.Persistence.NH;
 using N2.Details;
-using NHibernate.Linq;
+using N2.Engine;
 using N2.Persistence.Finder;
+using N2.Persistence.NH;
+using NHibernate.Linq;
 
 namespace N2.Linq
 {
@@ -16,8 +16,8 @@ namespace N2.Linq
 		public static IQueryable<T> Query<T>(this IEngine engine)
 		{
             var q = engine.Resolve<ISessionProvider>().OpenSession.Session.Query<T>();
-			if(typeof(ContentItem).IsAssignableFrom(typeof(T)))
-				return new ContentQueryable<T>(q);
+			//if(typeof(ContentItem).IsAssignableFrom(typeof(T)))
+			//    return new ContentQueryable<T>(q);
             return q;
 		}
 

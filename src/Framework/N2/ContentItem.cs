@@ -29,12 +29,11 @@ using System.Web;
 using N2.Collections;
 using N2.Definitions;
 using N2.Details;
-using N2.Edit.Workflow;
 using N2.Engine;
 using N2.Persistence;
 using N2.Persistence.Proxying;
 using N2.Web;
-using NHibernate.Search.Attributes;
+using N2.Persistence.Search;
 
 namespace N2
 {
@@ -62,7 +61,7 @@ namespace N2
 	[Serializable, DebuggerDisplay("{Name, nq}#{ID} [{TypeName, nq}]")]
 	[DynamicTemplate]
 	[SortChildren(SortBy.CurrentOrder)]
-	[Indexed]
+	[SearchableType]
 	public abstract class ContentItem : IComparable, 
 		IComparable<ContentItem>, 
 		ICloneable,
@@ -77,7 +76,9 @@ namespace N2
         private int id;
         private string title;
         private string name;
-        private string zoneName;
+		private string zoneName;
+		private string templateKey;
+		private int? translationKey;
 		private ContentItem parent = null;
         private DateTime created;
         private DateTime updated;
@@ -88,7 +89,6 @@ namespace N2
         private bool visible = true;
 		private ContentItem versionOf = null;
 		private string savedBy;
-		//private string templateName;
 		private IList<Security.AuthorizedRole> authorizedRoles = null;
 		private IContentItemList<ContentItem> children = new ItemList<ContentItem>();
 		private IContentList<ContentDetail> details = new ContentList<ContentDetail>();
@@ -99,7 +99,7 @@ namespace N2
         private int versionIndex;
         private ContentState state = ContentState.None;
 		private N2.Security.Permission alteredPermissions = N2.Security.Permission.None;
-        #endregion
+		#endregion
 
         #region Constructor
         /// <summary>Creates a new instance of the ContentItem.</summary>
@@ -114,7 +114,6 @@ namespace N2
 		#region Persisted Properties
 		/// <summary>Gets or sets item ID.</summary>
 		[DisplayableLiteral]
-		[DocumentId]
 		public virtual int ID
 		{
 			get { return id; }
@@ -131,8 +130,6 @@ namespace N2
 
 		/// <summary>Gets or sets the item's title. This is used in edit mode and probably in a custom implementation.</summary>
 		[DisplayableHeading(1)]
-		[Field(Index.Tokenized, Store = Store.Yes)]
-		[Boost(3)]
 		public virtual string Title
 		{
 			get { return title; }
@@ -142,7 +139,6 @@ namespace N2
         private static char[] invalidCharacters = new char[] { '%', '?', '&', '/', ':' };
 		/// <summary>Gets or sets the item's name. This is used to compute the item's url and can be used to uniquely identify the item among other items on the same level.</summary>
 		[DisplayableLiteral]
-		[Field(Index.Tokenized, Store = Store.Yes)]
 		public virtual string Name
 		{
 			get 
@@ -162,16 +158,29 @@ namespace N2
 
 		/// <summary>Gets or sets zone name which is associated with data items and their placement on a page.</summary>
 		[DisplayableLiteral]
-		[Field(Index.UnTokenized, Store = Store.Yes)]
         public virtual string ZoneName
 		{
 			get { return zoneName; }
 			set { zoneName = value; }
 		}
 
+		/// <summary>Gets or sets the sub-definition name of this item.</summary>
+		[DisplayableLiteral]
+		public virtual string TemplateKey
+		{
+			get { return templateKey; }
+			set { templateKey = value; }
+		}
+
+		/// <summary>A key shared by translations of an item. It's used to find translations and associate items as translations.</summary>
+		public int? TranslationKey
+		{
+			get { return translationKey; }
+			set { translationKey = value; }
+		}
+
 		/// <summary>Gets or sets when this item was initially created.</summary>
 		[DisplayableLiteral]
-		[Field(Index.UnTokenized, Store = Store.Yes)]
         public virtual DateTime Created
 		{
 			get { return created; }
@@ -180,7 +189,6 @@ namespace N2
 
 		/// <summary>Gets or sets the date this item was updated.</summary>
 		[DisplayableLiteral]
-		[Field(Index.UnTokenized, Store = Store.Yes)]
         public virtual DateTime Updated
 		{
 			get { return updated; }
@@ -189,7 +197,6 @@ namespace N2
 
 		/// <summary>Gets or sets the publish date of this item.</summary>
 		[DisplayableLiteral]
-		[Field(Index.UnTokenized, Store = Store.Yes)]
         public virtual DateTime? Published
 		{
 			get { return published; }
@@ -198,7 +205,6 @@ namespace N2
 
 		/// <summary>Gets or sets the expiration date of this item.</summary>
 		[DisplayableLiteral]
-		[Field(Index.UnTokenized, Store = Store.Yes)]
         public virtual DateTime? Expires
 		{
 			get { return expires; }
@@ -230,7 +236,6 @@ namespace N2
 
 		/// <summary>Gets or sets the name of the identity who saved this item.</summary>
 		[DisplayableLiteral]
-		[Field(Index.UnTokenized, Store = Store.Yes)]
         public virtual string SavedBy
 		{
 			get { return savedBy; }
@@ -238,7 +243,6 @@ namespace N2
 		}
 
 		/// <summary>Gets or sets the details collection. These are usually accessed using the e.g. item["Detailname"]. This is a place to store content data.</summary>
-		[IndexedEmbedded]
 		public virtual IContentList<ContentDetail> Details
 		{
 			get { return details; }
@@ -260,7 +264,6 @@ namespace N2
 		}
 
 		/// <summary>Represents the trail of id's uptil the current item e.g. "/1/10/14/"</summary>
-		[Field(Index.UnTokenized, Store = Store.Yes)]
 		public virtual string AncestralTrail
 		{
 			get { return ancestralTrail; }
@@ -276,7 +279,6 @@ namespace N2
         }
 
 		[DisplayableLiteral]
-		[Field(Index.UnTokenized, Store = Store.Yes)]
         public virtual ContentState State
         {
             get { return state; }
@@ -327,13 +329,6 @@ namespace N2
 			get { return "~/Default.aspx"; }
 		}
 
-		///// <summary>Gets or sets the sub-definition name of this item.</summary>
-		//public virtual string TemplateName
-		//{
-		//    get { return templateName; }
-		//    set { templateName = value; }
-		//}
-		
 		/// <summary>Gets the icon of this item. This can be used to distinguish item types in edit mode.</summary>
 		[DisplayableImage]
 		public virtual string IconUrl
@@ -394,8 +389,9 @@ namespace N2
 					case "SavedBy":				return SavedBy;
 					case "SortOrder":			return SortOrder;
 					case "State":				return State;
-					//case "TemplateName":		return TemplateName;
+					case "TemplateKey":			return TemplateKey;
                     case "TemplateUrl":			return TemplateUrl;
+					case "TranslationKey":		return TranslationKey;
 					case "Title":				return Title;
 					case "Updated":				return Updated;
 					case "Url":					return Url;
@@ -415,7 +411,6 @@ namespace N2
 
 				switch (detailName)
 				{
-					
 					case "AlteredPermissions":	AlteredPermissions = Utility.Convert<Security.Permission>(value); break;
 					case "AncestralTrail":		AncestralTrail = Utility.Convert<string>(value); break;
 					case "Created":				Created = Utility.Convert<DateTime>(value); break;
@@ -427,7 +422,8 @@ namespace N2
 					case "SavedBy":				SavedBy = Utility.Convert<string>(value); break;
 					case "SortOrder":			SortOrder = Utility.Convert<int>(value); break;
 					case "State":				State = Utility.Convert<ContentState>(value); break;
-					//case "TemplateName":		TemplateName = Utility.Convert<string>(value); break;
+					case "TemplateKey":			TemplateKey = Utility.Convert<string>(value); break;
+					case "TranslationKey":		TranslationKey = Utility.Convert<int>(value); break;
 					case "Title":				Title = Utility.Convert<string>(value); break;
 					case "Updated":				Updated = Utility.Convert<DateTime>(value); break;
 					case "VersionIndex":		VersionIndex = Utility.Convert<int>(value); break;
@@ -511,7 +507,7 @@ namespace N2
 			ContentDetail detail = null;
 			if (Details.TryGetValue(detailName, out detail))
 			{
-				if (value != null && detail.ValueType.IsAssignableFrom(valueType))
+				if (value != null)
 				{
 					// update an existing detail of same type
 					detail.Value = value;
@@ -756,7 +752,6 @@ namespace N2
 			CloneUnversionableFields(this, cloned);
 			CloneFields(this, cloned);
 			CloneAutoProperties(this, cloned);
-			//ClearUnclonable(cloned);
 			CloneDetails(this, cloned);
 			CloneChildren(this, cloned, includeChildren);
 			CloneAuthorizedRoles(this, cloned);
@@ -780,6 +775,7 @@ namespace N2
 			destination.alteredPermissions = source.alteredPermissions;
 			destination.created = source.created;
 			destination.updated = source.updated;
+			destination.templateKey = source.templateKey;
 			destination.versionIndex = source.versionIndex;
 			destination.visible = source.visible;
 			destination.savedBy = source.savedBy;
@@ -794,22 +790,6 @@ namespace N2
 				if (pi.CanRead && pi.CanWrite && pi.GetGetMethod().GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Length > 0)
 					pi.SetValue(destination, pi.GetValue(source, null), null);
 		}
-
-		//private static void ClearUnclonable(ContentItem destination)
-		//{
-		//    if (destination.id.ToString() == destination.name)
-		//        destination.name = null;
-		//    destination.id = 0;
-		//    destination.url = null;
-		//    destination.parent = null;
-		//    destination.versionOf = null;
-		//    destination.ancestralTrail = null;
-		//    destination.hashCode = null;
-		//    destination.authorizedRoles = new List<Security.AuthorizedRole>();
-		//    destination.children = new ItemList<ContentItem>();
-		//    destination.details = new ContentList<ContentDetail>();
-		//    destination.detailCollections = new ContentList<DetailCollection>();
-		//}
 
 		static void CloneAuthorizedRoles(ContentItem source, ContentItem destination)
 		{
@@ -1068,7 +1048,6 @@ namespace N2
 
 		#endregion
 
-
 		#region IInterceptable Members
 
 		public virtual Type GetContentType()
@@ -1078,7 +1057,7 @@ namespace N2
 
 		#endregion
 
-		#region IDependentEntity<IUrlParser> Members
+		#region IInjectable<IUrlParser> Members
 
 		void IInjectable<IUrlParser>.Set(IUrlParser dependency)
 		{

@@ -20,7 +20,6 @@
 
 using System;
 using N2.Collections;
-using NHibernate.Search.Attributes;
 
 namespace N2.Details
 {
@@ -29,8 +28,7 @@ namespace N2.Details
     /// </summary>
     /// <remarks>Usually content details are created below the hood when working with primitive .NET types against a contnet item.</remarks>
 	[Serializable]
-	[Indexed]
-	public class ContentDetail: ICloneable, INameable
+	public class ContentDetail: ICloneable, INameable, IMultipleValue
 	{
 		#region TypeKeys
 		public static class TypeKeys
@@ -42,6 +40,7 @@ namespace N2.Details
 			public const string DateTimeType = "DateTime";
 			public const string StringType = "String";
 			public const string ObjectType = "Object";
+			public const string MultiType = "Multi";
 		}
 		#endregion
 
@@ -85,7 +84,6 @@ namespace N2.Details
 		#region Public Properties
 
         /// <summary>Gets or sets the detil's primary key.</summary>
-		[DocumentId]
 		public virtual int ID
 		{
 			get { return id; }
@@ -119,6 +117,8 @@ namespace N2.Details
 						return linkedItem;
 					case TypeKeys.StringType:
 						return stringValue;
+					case TypeKeys.MultiType:
+						return new MultipleValueHolder { BoolValue = BoolValue, DateTimeValue = DateTimeValue, DoubleValue = DoubleValue, IntValue = IntValue, LinkedItem = LinkedItem, ObjectValue = ObjectValue, StringValue = StringValue };
 					default:
 						return objectValue;
 				}
@@ -128,6 +128,21 @@ namespace N2.Details
 				valueTypeKey = SetValue(value);
 			}
         }
+
+		#region class MultipleValueHolder
+		class MultipleValueHolder : IMultipleValue
+		{
+			#region IMultipleValue Members
+			public bool? BoolValue { get; set; }
+			public DateTime? DateTimeValue { get; set; }
+			public double? DoubleValue { get; set; }
+			public int? IntValue { get; set; }
+			public ContentItem LinkedItem { get; set; }
+			public object ObjectValue { get; set; }
+			public string StringValue { get; set; }
+			#endregion
+		}
+		#endregion
 
 		private string SetValue(object value)
 		{
@@ -217,6 +232,8 @@ namespace N2.Details
 						return typeof(string);
 					case TypeKeys.LinkType:
 						return typeof(ContentItem);
+					case TypeKeys.MultiType:
+						return typeof(IMultipleValue);
 					default:
 						return typeof(object);
 				}
@@ -229,7 +246,6 @@ namespace N2.Details
 			set { valueTypeKey = value; }
 		}
 
-		[Field(Index.Tokenized, Store = Store.No)]
 		public virtual string StringValue
 		{
 			get { return stringValue; }
@@ -255,28 +271,24 @@ namespace N2.Details
 			set { linkValue = value; }
 		}
 
-		[Field(Index.UnTokenized, Store = Store.No)]
 		public virtual double? DoubleValue
 		{
 			get { return doubleValue; }
 			set { doubleValue = value; }
 		}
 
-		[Field(Index.UnTokenized, Store = Store.No)]
 		public virtual DateTime? DateTimeValue
 		{
 			get { return dateTimeValue; }
 			set { dateTimeValue = value; }
 		}
 
-		[Field(Index.UnTokenized, Store = Store.Yes)]
 		public virtual bool? BoolValue
 		{
 			get { return boolValue; }
 			set { boolValue = value; }
 		}
 
-		[Field(Index.UnTokenized, Store = Store.Yes)]
 		public virtual int? IntValue
 		{
 			get { return intValue; }
@@ -325,6 +337,45 @@ namespace N2.Details
 			return new ContentDetail(item, name, value);
 		}
 
+		/// <summary>Creates a new content detail of the appropriated type based on the given value.</summary>
+		/// <param name="name">The name of the detail.</param>
+		/// <param name="value">The value of the detail. This will determine what type of content detail will be returned.</param>
+		/// <returns>A new content detail whose type depends on the type of value.</returns>
+		public static ContentDetail New(string name, object value)
+		{
+			if (value == null)
+				throw new ArgumentNullException("value");
+
+			return new ContentDetail(null, name, value);
+		}
+
+		/// <summary>Creates a new content detail with multiple values.</summary>
+		/// <param name="enclosingItem">The item that will enclose the new detail.</param>
+		/// <param name="name">The name of the detail.</param>
+		/// <param name="booleanValue">Boolean value.</param>
+		/// <param name="dateTimeValue">Date time value.</param>
+		/// <param name="doubleValue">Double value.</param>
+		/// <param name="integerValue">Integer value.</param>
+		/// <param name="linkedValue">Linked item.</param>
+		/// <param name="objectValue">Object value.</param>
+		/// <param name="stringValue">String value.</param>
+		/// <returns>A new content detail whose type depends on the type of value.</returns>
+		public static ContentDetail Multi(string name, bool? booleanValue = null, int? integerValue = null, double? doubleValue = null, DateTime? dateTimeValue = null, string stringValue = null, ContentItem linkedValue = null, object objectValue = null)
+		{
+			return new ContentDetail 
+			{ 
+				Name = name, 
+				ValueTypeKey = TypeKeys.MultiType, 
+				BoolValue = booleanValue, 
+				IntValue = integerValue, 
+				DoubleValue = doubleValue, 
+				DateTimeValue = dateTimeValue, 
+				LinkedItem = linkedValue, 
+				ObjectValue = objectValue,
+				StringValue = stringValue
+			};
+		}
+
 		/// <summary>Gets the name of the property on the detail class that can encapsulate the given value.</summary>
 		/// <param name="value">The value for which the to retrieve the associated property.</param>
 		/// <returns>The name of the property on the detail class that can encapsulate the given value.</returns>
@@ -341,6 +392,35 @@ namespace N2.Details
 			else if (value is string)
 				return "StringValue";
 			else if (value is ContentItem)
+				return "LinkedItem";
+			else
+				return "Value";
+		}
+
+		/// <summary>Gets the name of the property on the detail class that can encapsulate the given value type.</summary>
+		/// <typeparam name="T">The value type for which the to retrieve the associated property.</typeparam>
+		/// <returns>The name of the property on the detail class that can encapsulate the given value.</returns>
+		public static string GetAssociatedPropertyName<T>()
+		{
+			return GetAssociatedPropertyName(typeof(T));
+		}
+
+		/// <summary>Gets the name of the property on the detail class that can encapsulate the given value type.</summary>
+		/// <param name="valueType">The value type for which the to retrieve the associated property.</param>
+		/// <returns>The name of the property on the detail class that can encapsulate the given value.</returns>
+		public static string GetAssociatedPropertyName(Type valueType)
+		{
+			if (valueType == typeof(bool))
+				return "BoolValue";
+			else if (valueType == typeof(int))
+				return "IntValue";
+			else if (valueType == typeof(double))
+				return "DoubleValue";
+			else if (valueType == typeof(DateTime))
+				return "DateTimeValue";
+			else if (valueType == typeof(string))
+				return "StringValue";
+			else if (typeof(ContentItem).IsAssignableFrom(valueType))
 				return "LinkedItem";
 			else
 				return "Value";
@@ -405,7 +485,7 @@ namespace N2.Details
 
         #endregion
 
-		public void AddTo(ContentItem newEnclosingItem)
+		public virtual void AddTo(ContentItem newEnclosingItem)
 		{
 			AddTo((DetailCollection)null);
 
@@ -421,21 +501,21 @@ namespace N2.Details
 			}
 		}
 
-		internal void RemoveFromEnclosingItem()
+		protected internal virtual void RemoveFromEnclosingItem()
 		{
 			if (EnclosingItem != null)
 				EnclosingItem.Details.Remove(Name);
 		}
 
-		public void AddTo(DetailCollection newEnclosingCollection)
+		public virtual void AddTo(DetailCollection newEnclosingCollection)
 		{
 			RemoveFromEnclosingCollection();
 
 			if (newEnclosingCollection != null)
-				newEnclosingCollection.Add(newEnclosingCollection);
+				newEnclosingCollection.Add(this);
 		}
 
-		internal void RemoveFromEnclosingCollection()
+		protected internal virtual void RemoveFromEnclosingCollection()
 		{
 			if (EnclosingCollection != null)
 				EnclosingCollection.Remove(this);

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace N2.Collections
 {
@@ -64,6 +63,22 @@ namespace N2.Collections
 			// do nothing
 		}
 
+		#endregion
+
+		#region implicit operator Func<ContentItem, bool>		
+		public static implicit operator Func<ContentItem, bool>(ItemFilter filter)
+		{
+			if (filter == null)
+				return (ci) => true;
+			return filter.Match;
+		}
+
+		public static implicit operator ItemFilter(Func<ContentItem, bool> isPositiveMatch)
+		{
+			if (isPositiveMatch == null)
+				return new NullFilter();
+			return new DelegateFilter(isPositiveMatch);
+		}
 		#endregion
 	}
 }

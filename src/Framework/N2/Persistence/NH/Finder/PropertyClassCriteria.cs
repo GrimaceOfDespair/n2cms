@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 using N2.Persistence.Finder;
 
 namespace N2.Persistence.NH.Finder
@@ -43,6 +41,12 @@ namespace N2.Persistence.NH.Finder
 			query.Criterias.Add(new PropertyInHqlProvider<string>(op, "class", discriminators));
 			return query;
 		}
+
+		public IQueryAction IsNull(bool isNull)
+		{
+			throw new NotSupportedException("Class cannot be null or undefined");
+		}
+
 		#endregion
 	}
 }

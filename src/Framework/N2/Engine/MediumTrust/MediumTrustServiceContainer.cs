@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using N2.Plugin;
-using System.Diagnostics;
-using System.Linq;
 
 namespace N2.Engine.MediumTrust
 {
@@ -47,6 +47,7 @@ namespace N2.Engine.MediumTrust
 
 			if (instance is IAutoStart)
 			{
+				Trace.WriteLine("Starting " + instance);
 				(instance as IAutoStart).Start();
 			}
 		}
@@ -87,7 +88,7 @@ namespace N2.Engine.MediumTrust
 		{
 			Func<Type, IEnumerable<object>> listResolver;
 			if (!listResolvers.TryGetValue(serviceType, out listResolver))
-				return new object[0];
+				return Activator.CreateInstance(serviceType.MakeArrayType(), 0) as Array;
 			
 			var instances = listResolver(serviceType).ToList().ToArray();
 			var returnArray = Activator.CreateInstance(serviceType.MakeArrayType(), instances.Length) as Array;
@@ -151,6 +152,7 @@ namespace N2.Engine.MediumTrust
 				}
 
 				IAutoStart instance = Resolve(serviceType) as IAutoStart;
+				Trace.WriteLine("Starting " + instance);
 				instance.Start();
 			}
 		}
@@ -164,7 +166,7 @@ namespace N2.Engine.MediumTrust
 		{
 			if (resolvers.ContainsKey(serviceType))
 			{
-				Trace.WriteLine("Already contains service " + serviceType + ". Overwriting of " + classType);
+				Trace.WriteLine("Already contains service " + serviceType + ". " + classType + " is now default.");
 			}
 
 			var instanceResolver = CreateInstanceResolver(key, classType);
@@ -184,6 +186,7 @@ namespace N2.Engine.MediumTrust
 					if (container.TryGetValue(type, out instance))
 						return instance;
 
+					Trace.WriteLine("Creating " + classType);
 					object componentInstance = CreateInstance(key, type, classType);
 					container[type] = componentInstance;
 					return componentInstance;
@@ -326,7 +329,7 @@ namespace N2.Engine.MediumTrust
 				bool resolverExists = resolvers.ContainsKey(parameter.ParameterType);
 				bool genericResolverExists = (parameter.ParameterType.IsGenericType && resolvers.ContainsKey(parameter.ParameterType.GetGenericTypeDefinition()));
 				bool arrayResolverExists = (parameter.ParameterType.IsArray && resolvers.ContainsKey(parameter.ParameterType.GetElementType()));
-				if (!resolverExists && !genericResolverExists && !arrayResolverExists)
+				if (!resolverExists && !genericResolverExists && !arrayResolverExists && !parameter.ParameterType.IsArray)
 				{
 					result.Add(parameter);
 				}

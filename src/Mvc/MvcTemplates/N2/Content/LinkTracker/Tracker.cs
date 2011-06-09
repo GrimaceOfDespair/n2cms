@@ -1,13 +1,15 @@
 using System;
-using System.Linq;
-using N2.Details;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using N2.Details;
+using N2.Engine;
 using N2.Plugin;
 
 namespace N2.Edit.LinkTracker
 {
 	/// <summary>This class examines saved items and keeps tracks of links in html.</summary>
+	[Service]
 	public class Tracker : IAutoStart
 	{
 		public const string LinkDetailName = "TrackedLinks";

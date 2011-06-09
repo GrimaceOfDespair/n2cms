@@ -65,10 +65,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\lib\NHibernate.dll</HintPath>
     </Reference>
-    <Reference Include="NHibernate.ByteCode.Castle, Version=2.1.0.4000, Culture=neutral, PublicKeyToken=aa95f207798dfdb4, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\lib\NHibernate.ByteCode.Castle.dll</HintPath>
-    </Reference>
     <Reference Include="NHibernate.Search, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\lib\NHibernate.Search.dll</HintPath>
@@ -117,7 +113,6 @@
     </Compile>
     <Compile Include="Extensions\FilterExtensionsTests.cs" />
     <Compile Include="Extensions\TrashExtensionsTests.cs" />
-    <Compile Include="Fakes\FakeHttpServerUtility.cs" />
     <Compile Include="Mvc\ContentControllerTests.cs" />
     <Compile Include="Mvc\ContentRouteTests.cs" />
     <Compile Include="Mvc\ContentRouteTests_GetRouteData.cs" />
@@ -131,10 +126,7 @@
     <Compile Include="Mvc\Controllers\RegularController.cs" />
     <Compile Include="Mvc\Controllers\ExecutiveTeamController.cs" />
     <Compile Include="Mvc\Controllers\AboutUsSectionPageController.cs" />
-    <Compile Include="Fakes\FakeHttpContext.cs" />
-    <Compile Include="Fakes\FakeHttpRequest.cs" />
-    <Compile Include="Fakes\FakeHttpResponse.cs" />
-    <Compile Include="Fakes\FakeTypeFinder.cs" />
+    <Compile Include="Fakes\FakeTypeFinder2.cs" />
     <Compile Include="Mvc\Controllers\SearchController.cs" />
     <Compile Include="Mvc\Controllers\TestItemController.cs" />
     <Compile Include="Mvc\Html\DisplayExtensionsTests.cs" />
@@ -149,7 +141,8 @@
     <Compile Include="Mvc\N2ViewEngineTests.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Search\NHibernateSearchTests.cs" />
+    <Compile Include="Search\ContentChangeTrackerTests.cs" />
+    <Compile Include="Search\LuceneSearchTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Extensions\N2.Extensions.csproj">

@@ -1,20 +1,19 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Principal;
 using N2.Configuration;
-using NUnit.Framework;
 using N2.Definitions;
+using N2.Definitions.Static;
 using N2.Details;
 using N2.Integrity;
 using N2.Persistence;
-using N2.Tests.Definitions.Items;
-using N2.Tests.Fakes;
 using N2.Persistence.Proxying;
 using N2.Security;
-using Rhino.Mocks;
+using N2.Tests.Definitions.Items;
 using N2.Web;
-using N2.Definitions.Static;
+using NUnit.Framework;
+using Rhino.Mocks;
 
 namespace N2.Tests.Definitions
 {
@@ -41,7 +40,9 @@ namespace N2.Tests.Definitions
 				typeof (DefinitionTwoColumnPage),
 				typeof (DefinitionMenuItem),
 				typeof (DefinitionAutoCreatedItem),
+				typeof (DefinitionDisabled),
 				typeof (DefinitionReplaced),
+				typeof (DefinitionDisablingReplacement),
 				typeof (DefinitionReplacement),
 				typeof (DefinitionOne),
 				typeof (DefinitionTwo),
@@ -51,9 +52,7 @@ namespace N2.Tests.Definitions
 				typeof (DefinitionFreeItem),
 				typeof (DefinitionControllingParent),
 				typeof (DefinitionOppressedChild),
-				typeof (DefinitionPartDefinedItem),
-				typeof (DefinitionRemovesParent),
-				typeof (DefinitionRemovedByParent)
+				typeof (DefinitionPartDefinedItem)
 			};
 		}
 
@@ -64,7 +63,7 @@ namespace N2.Tests.Definitions
 
 			user = CreatePrincipal("SomeSchmuck");
 
-			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection());
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection());
 			IItemNotifier notifier = mocks.DynamicMock<IItemNotifier>();
 			mocks.Replay(notifier);
 			var changer = new N2.Edit.Workflow.StateChanger();
@@ -330,7 +329,7 @@ namespace N2.Tests.Definitions
 		[Test]
 		public void ReplacesParentDefinition_DisablesDefinitionOfParent()
 		{
-			ItemDefinition definition = definitions.GetDefinition(typeof(DefinitionReplaced));
+			ItemDefinition definition = definitions.GetDefinition(typeof(DefinitionDisabled));
 			Assert.IsFalse(definition.Enabled);
 		}
 
@@ -338,17 +337,42 @@ namespace N2.Tests.Definitions
 		public void ReplacingDefinition_ShowsUp_InAllowedChildDefinitions()
 		{
 			ItemDefinition definition = definitions.GetDefinition(typeof(DefinitionTextPage));
-			ItemDefinition replacingDefinition = definitions.GetDefinition(typeof(DefinitionReplacement));
+			ItemDefinition replacingDefinition = definitions.GetDefinition(typeof(DefinitionDisablingReplacement));
 			IList<ItemDefinition> allowedChildren = definitions.GetAllowedChildren(new DefinitionTextPage(), null, null);
 
 			EnumerableAssert.Contains(allowedChildren, replacingDefinition);
 		}
 
 		[Test]
+		public void ReplacingDefinition_RemovesReplaced()
+		{
+			ItemDefinition replacingDefinition = definitions.GetDefinition(typeof(DefinitionReplaced));
+
+			Assert.That(replacingDefinition, Is.Null);
+		}
+
+		[Test]
+		public void ReplacingDefinition_MaintiansOwnType()
+		{
+			ItemDefinition definition = definitions.GetDefinition(typeof(DefinitionTextPage));
+			ItemDefinition replacingDefinition = definitions.GetDefinition(typeof(DefinitionReplacement));
+
+			Assert.That(replacingDefinition.ItemType, Is.EqualTo(typeof(DefinitionReplacement)));
+		}
+
+		[Test]
+		public void ReplacingDefinition_AssumesParentDefinition_Discriminator()
+		{
+			ItemDefinition replacingDefinition = definitions.GetDefinition(typeof(DefinitionReplacement));
+
+			Assert.That(replacingDefinition.Discriminator, Is.EqualTo("DefinitionReplaced"));
+		}
+
+		[Test]
 		public void DisabledDefinition_DoesntShowUp_InAllowedChildDefinitions()
 		{
 			ItemDefinition definition = definitions.GetDefinition(typeof(DefinitionTextPage));
-			ItemDefinition replacedDefinition = definitions.GetDefinition(typeof(DefinitionReplaced));
+			ItemDefinition replacedDefinition = definitions.GetDefinition(typeof(DefinitionDisabled));
 			IList<ItemDefinition> allowedChildren = definitions.GetAllowedChildren(new DefinitionTextPage(), null, null);
 
 			EnumerableAssert.DoesntContain(allowedChildren, replacedDefinition);
@@ -481,24 +505,6 @@ namespace N2.Tests.Definitions
 			var definition = definitions.GetDefinition(typeof(DefinitionPartDefinedItem));
 
 			Assert.That(definition.AllowedIn, Is.EqualTo(AllowedZones.AllNamed));
-		}
-
-		[Test]
-		public void ReplacesParentDefinition_Removes_ParentsDefinition()
-		{
-			int count = definitions.GetDefinitions()
-				.Where(d => d.ItemType == typeof(DefinitionRemovedByParent))
-				.Count();
-
-			Assert.That(count, Is.EqualTo(0));
-		}
-
-		[Test]
-		public void ReplacesParentDefinition_Assumes_ParentsDefinition_Discriminator()
-		{
-			var definition = definitions.GetDefinition(typeof(DefinitionRemovesParent));
-
-			Assert.That(definition.Discriminator, Is.EqualTo("DefinitionRemovedByParent"));
 		}
 
 		[Test]

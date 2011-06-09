@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using N2.Configuration;
 using N2.Definitions;
-using N2.Tests.Definitions.Items;
-using N2.Tests.Fakes;
-using NUnit.Framework;
-using N2.Details;
 using N2.Definitions.Static;
+using N2.Details;
+using N2.Tests.Definitions.Items;
+using NUnit.Framework;
 
 namespace N2.Tests.Definitions
 {
@@ -136,7 +133,7 @@ namespace N2.Tests.Definitions
 		{
 			var definitionCollection = new DefinitionCollection();
 			definitionCollection.Add(new DefinitionElement { Name = "DefinitionUndefined", Type = typeof(DefinitionUndefined).AssemblyQualifiedName });
-			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection { Definitions = definitionCollection });
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection { Definitions = definitionCollection });
 
 			var definitions = builder.GetDefinitions();
 			var undefinedDefinition = definitions
@@ -150,7 +147,7 @@ namespace N2.Tests.Definitions
 		{
 			var definitionCollection = new DefinitionCollection();
 			definitionCollection.Remove(new DefinitionElement { Name = "DefinitionTextPage" });
-			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection { Definitions = definitionCollection });
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection { Definitions = definitionCollection });
 
 			var definitions = builder.GetDefinitions();
 			var textPageDefinitions = definitions
@@ -167,7 +164,7 @@ namespace N2.Tests.Definitions
 			var definitionCollection = new DefinitionCollection();
 			definitionCollection.Add(definitionElement);
 
-			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection { Definitions = definitionCollection });
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection { Definitions = definitionCollection });
 
 			var definitions = builder.GetDefinitions();
 			var textPageDefinition = definitions
@@ -191,7 +188,7 @@ namespace N2.Tests.Definitions
 					Title = "Page title", 
 					Type = typeof(N2.Details.EditableTextAttribute).AssemblyQualifiedName } }
 			});
-			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection { Definitions = definitionCollection });
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection { Definitions = definitionCollection });
 
 			var definitions = builder.GetDefinitions();
 			var textDefinition = definitions.Single(d => d.ItemType == typeof(DefinitionTextPage));
@@ -211,7 +208,7 @@ namespace N2.Tests.Definitions
 					Title = "Page title in navigation", 
 					Type = typeof(EditableTextAttribute).AssemblyQualifiedName } }
 			});
-			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection { Definitions = definitionCollection });
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection { Definitions = definitionCollection });
 
 			var definitions = builder.GetDefinitions();
 			var textDefinition = definitions.Single(d => d.ItemType == typeof(DefinitionTextPage));
@@ -228,7 +225,7 @@ namespace N2.Tests.Definitions
 			var definitionCollection = new DefinitionCollection();
 			definitionCollection.Add(definitionElement);
 
-			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new EngineSection { Definitions = definitionCollection });
+			DefinitionBuilder builder = new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection { Definitions = definitionCollection });
 
 			var definitions = builder.GetDefinitions();
 			var textPageDefinition = definitions

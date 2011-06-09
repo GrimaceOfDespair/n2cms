@@ -1,8 +1,7 @@
-using System;
 using N2.Configuration;
+using N2.Tests.Web.Items;
 using N2.Web;
 using NUnit.Framework;
-using N2.Tests.Web.Items;
 
 namespace N2.Tests.Web
 {
@@ -15,7 +14,7 @@ namespace N2.Tests.Web
 		public override void SetUp()
 		{
 			base.SetUp();
-			base.parser = parser = new UrlParser(persister, wrapper, host, new HostSection());
+			base.parser = parser = TestSupport.Setup(persister, wrapper, host);
 			CreateDefaultStructure();
 		}
 

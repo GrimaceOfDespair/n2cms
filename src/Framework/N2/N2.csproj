@@ -87,17 +87,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\lib\NHibernate.dll</HintPath>
     </Reference>
-    <Reference Include="NHibernate.ByteCode.Castle, Version=3.0.0.3001, Culture=neutral, PublicKeyToken=aa95f207798dfdb4, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\lib\NHibernate.ByteCode.Castle.dll</HintPath>
-    </Reference>
     <Reference Include="NHibernate.Caches.SysCache2, Version=3.0.0.3000, Culture=neutral, PublicKeyToken=6876f2ea66c9f443, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\lib\NHibernate.Caches.SysCache2.dll</HintPath>
-    </Reference>
-    <Reference Include="NHibernate.Search, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\lib\NHibernate.Search.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
@@ -118,7 +110,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\AccessFilter.cs" />
+    <Compile Include="Collections\CollectionExtensions.cs" />
     <Compile Include="Collections\ContentListOfT.cs" />
+    <Compile Include="Collections\NoHierarchyBuilder.cs" />
     <Compile Include="Collections\CountFilter.cs" />
     <Compile Include="Collections\FilterHelper.cs" />
     <Compile Include="Collections\IContentItemListOfT.cs" />
@@ -136,13 +130,27 @@
     <Compile Include="Collections\IZonedListOfT.cs" />
     <Compile Include="Collections\TypeFilter.cs" />
     <Compile Include="Collections\ZoneFilter.cs" />
+    <Compile Include="Configuration\ExternalsElement.cs" />
     <Compile Include="Configuration\MembershipElement.cs" />
     <Compile Include="Configuration\ResourcesElement.cs" />
     <Compile Include="Configuration\SearchElement.cs" />
     <Compile Include="Configuration\VppElement.cs" />
     <Compile Include="Configuration\ZipVppElement.cs" />
     <Compile Include="Configuration\ZipVppCollection.cs" />
+    <Compile Include="Definitions\DefinitionExtensions.cs" />
+    <Compile Include="Definitions\IRedirect.cs" />
     <Compile Include="Definitions\ISystemNode.cs" />
+    <Compile Include="Definitions\Runtime\ViewTemplateAnalyzer.cs" />
+    <Compile Include="Definitions\Runtime\ViewTemplateDescription.cs" />
+    <Compile Include="Definitions\Runtime\ViewTemplateProvider.cs" />
+    <Compile Include="Definitions\Runtime\ViewTemplateRegistrator.cs" />
+    <Compile Include="Definitions\Runtime\ViewTemplateSource.cs" />
+    <Compile Include="Definitions\AttributeTransformerBaseOfTIn.cs" />
+    <Compile Include="Definitions\TransformerBaseOfTOut.cs" />
+    <Compile Include="Details\EditableDefinitionAttribute.cs" />
+    <Compile Include="Details\IMultipleValue.cs" />
+    <Compile Include="Definitions\AttributeTransformerAttribute.cs" />
+    <Compile Include="Details\WithEditableTemplateSelectionAttribute.cs" />
     <Compile Include="Details\DisplayableTokensAttribute.cs" />
     <Compile Include="Details\EditableNumberAttribute.cs" />
     <Compile Include="Details\EditableSummaryAttribute.cs" />
@@ -169,9 +177,15 @@
     <Compile Include="Definitions\AllowedDefinitionResult.cs" />
     <Compile Include="Edit\Installation\InstallationChecker.cs" />
     <Compile Include="Edit\IPlaceHolderAccessor.cs" />
+    <Compile Include="Engine\Providers\ViewContentHelperProvider.cs" />
+    <Compile Include="Engine\Providers\PathDataProvider.cs" />
+    <Compile Include="Engine\Providers\RouteCollectionProvider.cs" />
+    <Compile Include="Engine\Providers\HtmlHelperProvider.cs" />
     <Compile Include="Engine\Providers\HttpContextProvider.cs" />
     <Compile Include="Engine\Providers\ViewEngineCollectionProvider.cs" />
     <Compile Include="Engine\Providers\VirtualPathProviderProvider.cs" />
+    <Compile Include="Integrity\RestrictCardinalityAttribute.cs" />
+    <Compile Include="Linq\WhereDetailHqlGenerator.cs" />
     <Compile Include="Obsolete\BooleanDetail.cs" />
     <Compile Include="Details\ControlAssociationAttribute.cs" />
     <Compile Include="Details\DisplayableHeadingAttribute.cs" />
@@ -183,7 +197,7 @@
     <Compile Include="Obsolete\DoubleDetail.cs" />
     <Compile Include="Obsolete\IntegerDetail.cs" />
     <Compile Include="Details\EditableFreeTextAreaAttribute.cs" />
-    <Compile Include="Details\EditableTextBoxAttribute.cs" />
+    <Compile Include="Details\EditableTextAttribute.cs" />
     <Compile Include="Obsolete\StringDetail.cs" />
     <Compile Include="Obsolete\DateTimeDetail.cs" />
     <Compile Include="Obsolete\ObjectDetail.cs" />
@@ -195,9 +209,8 @@
     <Compile Include="Edit\ToolbarArea.cs" />
     <Compile Include="Edit\ToolbarPlugInAttribute.cs" />
     <Compile Include="Definitions\IAllowedDefinitionFilter.cs" />
-    <Compile Include="Filter.cs" />
-    <Compile Include="Linq\ContentQueryable.cs" />
-    <Compile Include="Linq\ContentQueryProvider.cs" />
+    <Compile Include="Content.cs" />
+    <Compile Include="Linq\QueryTransformer.cs" />
     <Compile Include="Linq\EngineExtensions.cs" />
     <Compile Include="Linq\QueryableExtensions.cs" />
     <Compile Include="Obsolete\AllowedParentsAttribute.cs" />
@@ -210,14 +223,36 @@
     <Compile Include="CancellableItemEventArgs.cs" />
     <Compile Include="DestinationEventArgs.cs" />
     <Compile Include="Persistence\ContentActivator.cs" />
+    <Compile Include="Edit\IExternalContentRepository.cs" />
+    <Compile Include="Persistence\Finder\INullableCriteriaOfT.cs" />
+    <Compile Include="Persistence\Finder\IUntypedCriteria.cs" />
+    <Compile Include="Persistence\FindingTextSearcher.cs" />
     <Compile Include="Persistence\IPersister.cs" />
+    <Compile Include="Persistence\SearchHelper.cs" />
+    <Compile Include="Persistence\Search\IIndexableProperty.cs" />
+    <Compile Include="Persistence\Search\IIndexer.cs" />
+    <Compile Include="Persistence\Search\IndexableAttribute.cs" />
+    <Compile Include="Persistence\Search\IndexableContent.cs" />
+    <Compile Include="Persistence\Search\IndexableDefinitionExtractor.cs" />
+    <Compile Include="Persistence\Search\SearchableTypeAttribute.cs" />
+    <Compile Include="Persistence\Search\ITextExtractor.cs" />
+    <Compile Include="Persistence\Search\ITextSearcher.cs" />
     <Compile Include="Persistence\NH\ConfigurationBuilderParticipator.cs" />
     <Compile Include="Persistence\NH\ContentItemListFactoryOfT.cs" />
     <Compile Include="Persistence\NH\ContentListFactoryOfT.cs" />
+    <Compile Include="Persistence\NH\Finder\DetailNullHqlProvider.cs" />
+    <Compile Include="Persistence\NH\Finder\PropertyNullHqlProvider.cs" />
     <Compile Include="Persistence\NH\PersistentContentItemListOfT.cs" />
     <Compile Include="Persistence\NH\PersistentContentListOfT.cs" />
     <Compile Include="Persistence\PropertyPersistenceLocation.cs" />
     <Compile Include="Persistence\DescendantItemFinder.cs" />
+    <Compile Include="Persistence\Search\Hit.cs" />
+    <Compile Include="Persistence\Search\Query.cs" />
+    <Compile Include="Persistence\Search\Result.cs" />
+    <Compile Include="Persistence\Search\TextExtractor.cs" />
+    <Compile Include="Persistence\Serialization\PersistablePropertyXmlReader.cs" />
+    <Compile Include="Persistence\Serialization\PersistablePropertyXmlWriter.cs" />
+    <Compile Include="Plugin\ConnectionContext.cs" />
     <Compile Include="Security\SecurableExtensions.cs" />
     <Compile Include="Resources\ResourceInitializer.cs" />
     <Compile Include="Security\AuthorizedRole.cs" />
@@ -228,22 +263,40 @@
     <Compile Include="Web\Compilation\CodeExpressionBuilder.cs" />
     <Compile Include="Web\Compilation\CurrentPageExpressionBuilder.cs" />
     <Compile Include="Web\Compilation\N2ExpressionBuilder.cs" />
+    <Compile Include="Web\ContentHelperBase.cs" />
     <Compile Include="Web\CurrentPageProvider.cs" />
     <Compile Include="Web\ErrorEventArgs.cs" />
     <Compile Include="Web\MultipleSitesInitializer.cs" />
     <Compile Include="Web\Mvc\ActionResolver.cs" />
     <Compile Include="Web\Mvc\ContentController.cs" />
     <Compile Include="Web\Mvc\ContentControllerOfT.cs" />
+    <Compile Include="Web\Mvc\ControllerContentHelper.cs" />
+    <Compile Include="Web\Mvc\ViewContentHelper.cs" />
     <Compile Include="Web\Mvc\ContentOutputCacheAttribute.cs" />
     <Compile Include="Web\Mvc\ContentRoute.cs" />
     <Compile Include="Web\Mvc\ContentRouteOfT.cs" />
     <Compile Include="Web\Mvc\ControllerMapper.cs" />
+    <Compile Include="Web\Mvc\DisplayRenderer.cs" />
+    <Compile Include="Web\Mvc\ExternalContentAttribute.cs" />
     <Compile Include="Web\Mvc\Html\ContentUrlExtensions.cs" />
+    <Compile Include="Web\Mvc\Html\RegisterExtensions.cs" />
+    <Compile Include="Web\Mvc\Html\ThemeExtensions.cs" />
+    <Compile Include="Web\Mvc\IDisplayRenderer.cs" />
+    <Compile Include="Web\Mvc\ViewEnginesExtensions.cs" />
+    <Compile Include="Web\Mvc\QueryHelper.cs" />
+    <Compile Include="Web\Mvc\RegisterHelper.cs" />
+    <Compile Include="Web\Mvc\RegisteringDisplayRenderer.cs" />
+    <Compile Include="Web\Mvc\RegisteringViewEngineDecorator.cs" />
+    <Compile Include="Web\Mvc\RenderHelper.cs" />
+    <Compile Include="Web\Mvc\ThemeViewEngine.cs" />
+    <Compile Include="Collections\TraverseHelper.cs" />
     <Compile Include="Web\Parsing\AnalyzerBase.cs" />
     <Compile Include="Web\Parsing\Token.cs" />
     <Compile Include="Web\Parsing\TokenType.cs" />
     <Compile Include="Web\Rendering\DisplayableTokenRenderer.cs" />
     <Compile Include="Web\Rendering\RenderingExtensions.cs" />
+    <Compile Include="Web\UI\FormsContentHelper.cs" />
+    <Compile Include="Web\UI\RecursiveContainerAttribute.cs" />
     <Compile Include="Web\Wiki\Analyzers\BoldAnalyzer.cs" />
     <Compile Include="Web\Wiki\Analyzers\BoldItalicsAnalyzer.cs" />
     <Compile Include="Web\Wiki\Analyzers\CommentAnalyzer.cs" />
@@ -266,9 +319,9 @@
     <Compile Include="Web\Mvc\Html\ContentHtmlExtensions.cs" />
     <Compile Include="Web\Mvc\Html\ContentItemExtensions.cs" />
     <Compile Include="Web\Mvc\Html\ControlPanelExtensions.cs" />
-    <Compile Include="Web\Mvc\Builder.cs" />
+    <Compile Include="Definitions\Runtime\Builder.cs" />
     <Compile Include="Web\Mvc\Html\EditableRegistrationExtensions.cs" />
-    <Compile Include="Web\Mvc\EditableBuilder.cs" />
+    <Compile Include="Definitions\Runtime\EditableBuilder.cs" />
     <Compile Include="Web\Mvc\Html\EngineExnteions.cs" />
     <Compile Include="Web\Mvc\Html\RegistrationExtensions.cs" />
     <Compile Include="Web\Mvc\Html\ResourcesExtensions.cs" />
@@ -769,7 +822,7 @@
     <Compile Include="Security\Permission.cs" />
     <Compile Include="Security\PermissionMap.cs" />
     <Compile Include="Security\SecurityManager.cs" />
-    <Compile Include="Engine\EventBroker.cs" />
+    <Compile Include="Web\EventBroker.cs" />
     <Compile Include="Web\ConventionTemplateAttribute.cs" />
     <Compile Include="Web\ConventionTemplateDirectoryAttribute.cs" />
     <Compile Include="Web\PathDictionary.cs" />
@@ -782,7 +835,6 @@
     <Compile Include="Web\Compilation\StartPageExpressionBuilder.cs" />
     <Compile Include="Web\ControlsAttribute.cs" />
     <Compile Include="Web\HttpRequestContextAccessor.cs" />
-    <Compile Include="Engine\IContentAdapter.cs" />
     <Compile Include="Web\IAdapterDescriptor.cs" />
     <Compile Include="Web\IRequestContextAccessor.cs" />
     <Compile Include="Web\DynamicTemplateAttribute.cs" />
@@ -920,9 +972,6 @@
     <Compile Include="Web\Parts\PartsAdapter.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Engine\n2.configuration.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <Service Include="{B4F97281-0DBD-4835-9ED8-7DFB966E87FF}" />
   </ItemGroup>
   <ItemGroup>
@@ -932,8 +981,6 @@
     <Content Include="ProjectComments.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <EmbeddedResource Include="Web\n2.multiplesites.xml" />
-    <EmbeddedResource Include="Web\n2.notweb.xml" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

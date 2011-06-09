@@ -1,18 +1,48 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using N2.Edit.Workflow;
+using System.Security.Principal;
+using N2.Security;
+using N2.Engine;
+using N2.Web;
 
 namespace N2.Collections
 {
 	public class FilterHelper
 	{
-		/// <summary>Filters by access</summary>
+		IEngine engine;
+
+		public FilterHelper(IEngine engine)
+		{
+			this.engine = engine;
+		}
+
+		/// <summary>Filters by access.</summary>
 		/// <returns>A filter.</returns>
 		public ItemFilter Accessible()
 		{
-			return new AccessFilter();
+			return Accessible(engine.Resolve<IWebContext>().User, engine.SecurityManager);
+		}
+
+		/// <summary>Filters by access.</summary>
+		/// <returns>A filter.</returns>
+		public ItemFilter Accessible(IPrincipal user, ISecurityManager security)
+		{
+			return new CompositeFilter(new AccessFilter(user, security), new PublishedFilter());
+		}
+
+		/// <summary>Filters by access and pages.</summary>
+		/// <returns>A filter.</returns>
+		public ItemFilter AccessiblePage()
+		{
+			return AccessiblePage(engine.Resolve<IWebContext>().User, engine.SecurityManager);
+		}
+
+		/// <summary>Filters by access and pages.</summary>
+		/// <returns>A filter.</returns>
+		public ItemFilter AccessiblePage(IPrincipal user, ISecurityManager security)
+		{
+			return new CompositeFilter(new PageFilter(), new PublishedFilter(), new AccessFilter(user, security));
 		}
 
 		/// <summary>Filters by all the provided filters.</summary>
@@ -26,7 +56,23 @@ namespace N2.Collections
 		/// <summary>Filters by all the provided filters.</summary>
 		/// <param name="filters">The filters to aggregate.</param>
 		/// <returns>A filter.</returns>
+		public ItemFilter All(IEnumerable<ItemFilter> filters)
+		{
+			return new CompositeFilter(filters);
+		}
+
+		/// <summary>Filters by all the provided filters.</summary>
+		/// <param name="filters">The filters to aggregate.</param>
+		/// <returns>A filter.</returns>
 		public ItemFilter Any(params ItemFilter[] filters)
+		{
+			return new DelegateFilter(i => filters.Any(f => f.Match(i)));
+		}
+
+		/// <summary>Filters by all the provided filters.</summary>
+		/// <param name="filters">The filters to aggregate.</param>
+		/// <returns>A filter.</returns>
+		public ItemFilter Any(IEnumerable<ItemFilter> filters)
 		{
 			return new DelegateFilter(i => filters.Any(f => f.Match(i)));
 		}
@@ -128,6 +174,39 @@ namespace N2.Collections
 		public ItemFilter Type(params Type[] types)
 		{
 			return new TypeFilter(types);
+		}
+
+		/// <summary>Filters by definition name.</summary>
+		/// <param name="discriminatorAndTemplateKey">A discriminator and/or template key to filter by, e.g. ContentPage, ContentPage/News or /News.</param>
+		/// <returns>A filter.</returns>
+		public ItemFilter Definition(string discriminatorAndTemplateKey)
+		{
+			int slashIndex = discriminatorAndTemplateKey.IndexOf('/');
+			if(slashIndex == 0)
+				return TemplateOnly(discriminatorAndTemplateKey.Substring(1));
+			if(slashIndex < 0)
+				return DefinitionOnly(discriminatorAndTemplateKey);
+
+			return All(DefinitionOnly(discriminatorAndTemplateKey.Substring(0, slashIndex)), TemplateOnly(discriminatorAndTemplateKey.Substring(slashIndex + 1)));
+		}
+
+		private ItemFilter DefinitionOnly(string discriminator)
+		{
+			var d = engine.Definitions.GetDefinition(discriminator);
+			if (d == null)
+				return Anything();
+			return Type(d.ItemType);
+		}
+
+		/// <summary>Filters items by temlate key.</summary>
+		/// <param name="templateKey">The template key the item should have.</param>
+		/// <returns>A filter.</returns>
+		private ItemFilter TemplateOnly(string templateKey)
+		{
+			if (string.IsNullOrEmpty(templateKey))
+				return Anything();
+
+			return Custom(ci => ci.TemplateKey == templateKey);
 		}
 
 		/// <summary>Filters by type of page.</summary>

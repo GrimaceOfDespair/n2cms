@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using N2.Persistence.Finder;
-using N2.Definitions;
-using N2.Persistence;
-using N2.Web;
 using N2.Engine;
+using N2.Persistence;
+using N2.Persistence.Finder;
+using N2.Web;
 
 namespace N2.Edit
 {
@@ -36,11 +33,26 @@ namespace N2.Edit
 			this.activator = activator;
 		}
 
+		/// <summary>Gets a container below the start page or null if no container exists.</summary>
+		/// <returns></returns>
+		public virtual T GetBelowStart()
+		{
+			return Get(persister.Get(host.CurrentSite.StartPageID));
+		}
+
 		/// <summary>Gets a container below the root page or null if no container exists.</summary>
 		/// <returns></returns>
 		public virtual T GetBelowRoot()
 		{
 			return Get(persister.Get(host.CurrentSite.RootItemID));
+		}
+
+		/// <summary>Gets a container below the start page and creates it if no container exists.</summary>
+		/// <param name="setupCreatedItem"></param>
+		/// <returns></returns>
+		public virtual T GetOrCreateBelowStart(Action<T> setupCreatedItem)
+		{
+			return GetOrCreate(persister.Get(host.CurrentSite.StartPageID), setupCreatedItem);
 		}
 
 		/// <summary>Gets a container below the root page and creates it if no container exists.</summary>
@@ -58,7 +70,7 @@ namespace N2.Edit
 		{
 			if (Navigate)
 			{
-				return containerContainer.Children.OfType<T>().FirstOrDefault();
+				return containerContainer.Children.Query().OfType<T>().FirstOrDefault();
 			}
 			else
 			{

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Configuration;
+﻿using System.Configuration;
 
 namespace N2.Configuration
 {
@@ -30,6 +26,14 @@ namespace N2.Configuration
 		{
 			get { return (bool)base["enabled"]; }
 			set { base["enabled"] = value; }
+		}
+
+		/// <summary>Try handling errors gracefully.</summary>
+		[ConfigurationProperty("handleErrors", DefaultValue = true)]
+		public bool HandleErrors
+		{
+			get { return (bool)base["handleErrors"]; }
+			set { base["handleErrors"] = value; }
 		}
 	}
 }

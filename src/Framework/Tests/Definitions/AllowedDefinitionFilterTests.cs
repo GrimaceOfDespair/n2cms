@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
 using N2.Definitions;
-using Rhino.Mocks;
-using N2.Tests.Definitions.Items;
 using N2.Integrity;
+using N2.Tests.Definitions.Items;
+using NUnit.Framework;
+using Rhino.Mocks;
 
 namespace N2.Tests.Definitions
 {
@@ -20,8 +18,8 @@ namespace N2.Tests.Definitions
 		[SetUp]
 		public void SetUp()
 		{
-			parentDefinition = new ItemDefinition(typeof(DefinitionControllingParent)) { Template = "List" };
-			childDefinition = new ItemDefinition(typeof(DefinitionOppressedChild)) { Template = "Wide" };
+			parentDefinition = new ItemDefinition(typeof(DefinitionControllingParent)) { TemplateKey = "List" };
+			childDefinition = new ItemDefinition(typeof(DefinitionOppressedChild)) { TemplateKey = "Wide" };
 
 			definitions = MockRepository.GenerateStub<IDefinitionManager>();
 			definitions.Expect(d => d.GetDefinitions()).Return(new[] { parentDefinition, childDefinition }).Repeat.Any();
@@ -52,7 +50,7 @@ namespace N2.Tests.Definitions
 		[Test]
 		public void RestrictParentsAttribute_AllowsChildren_WithCorrectParentTemplateName()
 		{
-			var rca = new RestrictParentsAttribute(typeof(DefinitionControllingParent)) { TemplateNames = new[] { "List" } };
+			var rca = new RestrictParentsAttribute(typeof(DefinitionControllingParent)) { TemplateKeys = new[] { "List" } };
 			rca.Refine(childDefinition, new List<ItemDefinition>());
 
 			var allowedChildren = parentDefinition.GetAllowedChildren(definitions, new DefinitionControllingParent()).ToList();
@@ -63,7 +61,7 @@ namespace N2.Tests.Definitions
 		[Test]
 		public void RestrictParentsAttribute_DisallowsChildren_WithIncorrectParentTemplateName()
 		{
-			var rca = new RestrictParentsAttribute(typeof(DefinitionControllingParent)) { TemplateNames = new[] { "Single" } };
+			var rca = new RestrictParentsAttribute(typeof(DefinitionControllingParent)) { TemplateKeys = new[] { "Single" } };
 			rca.Refine(childDefinition, new List<ItemDefinition>());
 
 			var allowedChildren = parentDefinition.GetAllowedChildren(definitions, new DefinitionControllingParent()).ToList();

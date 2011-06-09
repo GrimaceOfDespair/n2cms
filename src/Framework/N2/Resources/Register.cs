@@ -1,12 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Web.UI;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
-using N2.Edit;
-using N2.Engine;
-using System.Collections;
 using N2.Web;
-using System.Collections.Generic;
 
 namespace N2.Resources
 {
@@ -16,7 +13,7 @@ namespace N2.Resources
 	public static class Register
 	{
 		public static bool Debug { get; set; }
-		public const string JQueryVersion = "1.5.1";
+		public const string JQueryVersion = "1.5.2";
 
 		#region page StyleSheet
 
@@ -326,10 +323,10 @@ namespace N2.Resources
 
 			RegisterResource(stateCollection, resourceUrl);
 
-			return string.Format("<script type='text/javascript' src='{0}'></script>", Url.ResolveTokens(resourceUrl));
+			return string.Format("<script type=\"text/javascript\" src=\"{0}\"></script>", Url.ResolveTokens(resourceUrl));
 		}
 
-		const string scriptFormat = @"<script type='text/javascript'>//<![CDATA[
+		const string scriptFormat = @"<script type=""text/javascript"">//<![CDATA[
 {0}//]]></script>";
 		public static string JavaScript(IDictionary<string, object> stateCollection, string script, ScriptOptions options)
 		{
@@ -377,7 +374,7 @@ namespace N2.Resources
 
 			RegisterResource(stateCollection, resourceUrl);
 
-			return string.Format("<link rel='stylesheet' type='text/css' href='{0}'/>", Url.ResolveTokens(resourceUrl));
+			return string.Format("<link href=\"{0}\" rel=\"stylesheet\" type=\"text/css\" />", Url.ResolveTokens(resourceUrl));
 		}
 		#endregion
 	}

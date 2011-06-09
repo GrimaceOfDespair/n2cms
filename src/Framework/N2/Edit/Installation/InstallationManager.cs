@@ -1,27 +1,25 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using N2.Definitions;
-using N2.Details;
+using N2.Definitions.Static;
+using N2.Engine;
+using N2.Installation;
+using N2.Persistence;
 using N2.Persistence.NH;
-using N2.Security;
 using N2.Persistence.Serialization;
 using N2.Web;
 using NHibernate;
 using NHibernate.Driver;
-using NHibernate.Tool.hbm2ddl;
-using Environment=NHibernate.Cfg.Environment;
-using N2.Persistence;
 using NHibernate.SqlTypes;
-using System.Diagnostics;
-using N2.Installation;
-using N2.Engine;
-using N2.Definitions.Static;
+using NHibernate.Tool.hbm2ddl;
+using Environment = NHibernate.Cfg.Environment;
+using N2.Plugin;
 
 namespace N2.Edit.Installation
 {
@@ -43,8 +41,9 @@ namespace N2.Edit.Installation
         IHost host;
     	IWebContext webContext;
 		DefinitionMap map;
+		ConnectionContext connectionContext;
 
-		public InstallationManager(IHost host, DefinitionMap map, ContentActivator activator, Importer importer, IPersister persister, ISessionProvider sessionProvider, IConfigurationBuilder configurationBuilder, IWebContext webContext)
+		public InstallationManager(IHost host, DefinitionMap map, ContentActivator activator, Importer importer, IPersister persister, ISessionProvider sessionProvider, IConfigurationBuilder configurationBuilder, IWebContext webContext, ConnectionContext connectionContext)
 		{
             this.host = host;
 			this.map = map;
@@ -54,6 +53,7 @@ namespace N2.Edit.Installation
             this.sessionProvider = sessionProvider;
             this.configurationBuilder = configurationBuilder;
         	this.webContext = webContext;
+			this.connectionContext = connectionContext;
 		}
         
 		NHibernate.Cfg.Configuration cfg;
@@ -157,7 +157,7 @@ namespace N2.Edit.Installation
 					return;
 
 				status.AppPath = status.RootItem[installationAppPath] as string;
-				status.NeedsRebase = !string.IsNullOrEmpty(status.AppPath) && !string.Equals(status.AppPath, webContext.ToAbsolute("~/"));
+				status.NeedsRebase = !string.IsNullOrEmpty(status.AppPath) && !string.Equals(status.AppPath, N2.Web.Url.ToAbsolute("~/"));
 			}
 			catch (Exception ex)
 			{
@@ -186,24 +186,25 @@ namespace N2.Edit.Installation
 		{
 			try
 			{
-				using (sessionProvider)
-				{
-					status.DatabaseVersion = 0;
-					sessionProvider.OpenSession.Session.CreateQuery("select ci.ID from ContentItem ci").SetMaxResults(1).List();
-					status.DatabaseVersion = 1;
+				status.DatabaseVersion = 0;
+				sessionProvider.OpenSession.Session.CreateQuery("select ci.ID from ContentItem ci").SetMaxResults(1).List();
+				status.DatabaseVersion = 1;
 
-					// checking for properties added between version 1 and 2
-					sessionProvider.OpenSession.Session.CreateQuery("select ci.AncestralTrail from ContentItem ci").SetMaxResults(1).List();
-					status.DatabaseVersion = 2;
+				// checking for properties added between version 1 and 2
+				sessionProvider.OpenSession.Session.CreateQuery("select ci.AncestralTrail from ContentItem ci").SetMaxResults(1).List();
+				status.DatabaseVersion = 2;
 
-					// checking for properties added between version 2 and 3
-					sessionProvider.OpenSession.Session.CreateQuery("select ci.AlteredPermissions from ContentItem ci").SetMaxResults(1).List();
-					status.DatabaseVersion = 3;
+				// checking for properties added between version 2 and 3
+				sessionProvider.OpenSession.Session.CreateQuery("select ci.AlteredPermissions from ContentItem ci").SetMaxResults(1).List();
+				status.DatabaseVersion = 3;
 
-					// checking persistable properties added in application
-					sessionProvider.OpenSession.Session.CreateQuery("select ci from ContentItem ci").SetMaxResults(1).List();
-					status.DatabaseVersion = 4;
-				}
+				// checking for properties added between version 3 and 4
+				sessionProvider.OpenSession.Session.CreateQuery("select ci.TemplateKey from ContentItem ci").SetMaxResults(1).List();
+				status.DatabaseVersion = 4;
+
+				// checking persistable properties added in application
+				sessionProvider.OpenSession.Session.CreateQuery("select ci from ContentItem ci").SetMaxResults(1).List();
+				status.DatabaseVersion = 5;
 			}
 			catch (Exception ex)
 			{
@@ -215,15 +216,13 @@ namespace N2.Edit.Installation
 		{
 			try
 			{
-				using (sessionProvider)
-				{
-					ISession session = sessionProvider.OpenSession.Session;
+				ISession session = sessionProvider.OpenSession.Session;
 
-					session.CreateQuery("from ContentItem").SetMaxResults(1).List();
-					session.CreateQuery("from ContentDetail").SetMaxResults(1).List();
-					session.CreateQuery("from AuthorizedRole").SetMaxResults(1).List();
-					session.CreateQuery("from DetailCollection").SetMaxResults(1).List();
-				}
+				session.CreateQuery("from ContentItem").SetMaxResults(1).List();
+				session.CreateQuery("from ContentDetail").SetMaxResults(1).List();
+				session.CreateQuery("from AuthorizedRole").SetMaxResults(1).List();
+				session.CreateQuery("from DetailCollection").SetMaxResults(1).List();
+
 				status.HasSchema = true;
 			}
 			catch (Exception ex)
@@ -240,14 +239,11 @@ namespace N2.Edit.Installation
 		{
 			try
 			{
-				using (sessionProvider)
-				{
-                    ISession session = sessionProvider.OpenSession.Session;
-					status.Items = Convert.ToInt32(session.CreateQuery("select count(*) from ContentItem").UniqueResult());
-					status.Details = Convert.ToInt32(session.CreateQuery("select count(*) from ContentDetail").UniqueResult());
-					status.DetailCollections = Convert.ToInt32(session.CreateQuery("select count(*) from AuthorizedRole").UniqueResult());
-					status.AuthorizedRoles = Convert.ToInt32(session.CreateQuery("select count(*) from DetailCollection").UniqueResult());
-				}
+                ISession session = sessionProvider.OpenSession.Session;
+				status.Items = Convert.ToInt32(session.CreateQuery("select count(*) from ContentItem").UniqueResult());
+				status.Details = Convert.ToInt32(session.CreateQuery("select count(*) from ContentDetail").UniqueResult());
+				status.DetailCollections = Convert.ToInt32(session.CreateQuery("select count(*) from AuthorizedRole").UniqueResult());
+				status.AuthorizedRoles = Convert.ToInt32(session.CreateQuery("select count(*) from DetailCollection").UniqueResult());
 			}
 			catch(Exception ex)
 			{
@@ -280,21 +276,18 @@ namespace N2.Edit.Installation
 		/// <returns>A string with diagnostic information about the database.</returns>
 		public string CheckDatabase()
 		{
-            using (sessionProvider)
-			{
-                ISession session = sessionProvider.OpenSession.Session;
+            ISession session = sessionProvider.OpenSession.Session;
 
-				// this is supposed to catch mis-matches between database and code e.g. due to refactorings during development
-				session.CreateQuery("from ContentItem").SetMaxResults(1000).List();
+			// this is supposed to catch mis-matches between database and code e.g. due to refactorings during development
+			session.CreateQuery("from ContentItem").SetMaxResults(1000).List();
 
-				int itemCount = Convert.ToInt32(session.CreateQuery("select count(*) from ContentItem").UniqueResult());
-				int detailCount = Convert.ToInt32(session.CreateQuery("select count(*) from ContentDetail").UniqueResult());
-				int allowedRoleCount = Convert.ToInt32(session.CreateQuery("select count(*) from AuthorizedRole").UniqueResult());
-				int detailCollectionCount = Convert.ToInt32(session.CreateQuery("select count(*) from DetailCollection").UniqueResult());
+			int itemCount = Convert.ToInt32(session.CreateQuery("select count(*) from ContentItem").UniqueResult());
+			int detailCount = Convert.ToInt32(session.CreateQuery("select count(*) from ContentDetail").UniqueResult());
+			int allowedRoleCount = Convert.ToInt32(session.CreateQuery("select count(*) from AuthorizedRole").UniqueResult());
+			int detailCollectionCount = Convert.ToInt32(session.CreateQuery("select count(*) from DetailCollection").UniqueResult());
 
-				return string.Format("Database OK, items: {0}, details: {1}, allowed roles: {2}, detail collections: {3}",
-				                     itemCount, detailCount, allowedRoleCount, detailCollectionCount);
-			}
+			return string.Format("Database OK, items: {0}, details: {1}, allowed roles: {2}, detail collections: {3}",
+				                    itemCount, detailCount, allowedRoleCount, detailCollectionCount);
 		}
 
 		/// <summary>Checks the root node in the database. Throws an exception if there is something really wrong with it.</summary>
@@ -330,7 +323,7 @@ namespace N2.Edit.Installation
 			ContentItem item = activator.CreateInstance(type, null);
 			item.Name = name;
 			item.Title = title;
-			item[InstallationAppPath] = webContext.ToAbsolute("~/");
+			item[InstallationAppPath] = N2.Web.Url.ToAbsolute("~/");
 			item[installationHost] = webContext.Url.HostUrl.ToString();
 			persister.Save(item);
 			return item;
@@ -379,7 +372,7 @@ namespace N2.Edit.Installation
 		public ContentItem InsertExportFile(Stream stream, string filename)
 		{
 			IImportRecord record = importer.Read(stream, filename);
-			record.RootItem["Installation.AppPath"] = webContext.ToAbsolute("~/");
+			record.RootItem["Installation.AppPath"] = N2.Web.Url.ToAbsolute("~/");
 			record.RootItem["Installation.Host"] = webContext.Url.HostUrl.ToString(); 
 			importer.Import(record, null, ImportOption.All);
 
@@ -483,6 +476,11 @@ namespace N2.Edit.Installation
 					yield return item;
 				}
 			}
+		}
+
+		public void UpdateStatus(SystemStatusLevel currentLevel)
+		{
+			connectionContext.SetConnected(currentLevel);
 		}
 	}
 }

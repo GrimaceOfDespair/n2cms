@@ -5,18 +5,18 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using System.Xml;
 using N2.Configuration;
 using N2.Definitions;
+using N2.Details;
 using N2.Engine;
+using N2.Linq;
+using N2.Security;
 using N2.Web;
 using NHibernate;
+using NHibernate.Cfg;
 using NHibernate.Mapping;
-using NHibernate.Cfg.Loquacious;
-using NHibernate.Bytecode;
-using NHibernate.Proxy;
-using NHibernate.ByteCode.Castle;
-using Castle.DynamicProxy;
+using NHibernate.Mapping.ByCode;
 
 namespace N2.Persistence.NH
 {
@@ -38,11 +38,8 @@ namespace N2.Persistence.NH
 		string defaultMapping = "N2.Persistence.NH.Mappings.Default.hbm.xml,N2";
 		string tablePrefix = "n2";
 		int batchSize = 25;
-		string childrenLaziness = "extra";
+		CollectionLazy childrenLaziness = CollectionLazy.Extra;
 		int stringLength = 1073741823;
-		string mappingStartTag = @"<?xml version=""1.0"" encoding=""utf-16""?>
-<hibernate-mapping xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns=""urn:nhibernate-mapping-2.2"">";
-		string mappingEndTag = "</hibernate-mapping>";
 		bool tryLocatingHbmResources = false;
 		
 		/// <summary>Creates a new instance of the <see cref="ConfigurationBuilder"/>.</summary>
@@ -81,7 +78,6 @@ namespace N2.Persistence.NH
 		protected void SetupProperties(DatabaseSection config, ConnectionStringsSection connectionStrings)
 		{
 			NHibernate.Cfg.Environment.UseReflectionOptimizer = Utility.GetTrustLevel() > System.Web.AspNetHostingPermissionLevel.Medium;
-			Properties[NHibernate.Cfg.Environment.ProxyFactoryFactoryClass] = "NHibernate.ByteCode.Castle.ProxyFactoryFactory, NHibernate.ByteCode.Castle";
 
 			// connection
 
@@ -239,10 +235,9 @@ namespace N2.Persistence.NH
 		/// <summary>Builds a <see cref="NHibernate.Cfg.Configuration"/> by adding properties, default assemblies and generating class mappings for unmapped types.</summary>
 		/// <returns></returns>
 		public virtual NHibernate.Cfg.Configuration BuildConfiguration()
-		{
+		{			
 			NHibernate.Cfg.Configuration cfg = new NHibernate.Cfg.Configuration();
 
-			//NHibernate.Cfg.Environment.Isolation
 			AddProperties(cfg);
 			AddDefaultMapping(cfg);
 			AddMappings(cfg);
@@ -261,13 +256,132 @@ namespace N2.Persistence.NH
 
 		protected virtual void AddDefaultMapping(NHibernate.Cfg.Configuration cfg)
 		{
-			using (Stream stream = GetStreamFromName(DefaultMapping))
-			using (StreamReader reader = new StreamReader(stream))
+			ModelMapper mm = new ModelMapper();
+
+			mm.Class<ContentItem>(ContentItemCustomization);
+			mm.Class<ContentDetail>(ContentDetailCustomization);
+			mm.Class<DetailCollection>(DetailCollectionCustomization);
+			mm.Class<AuthorizedRole>(AuthorizedRoleCustomization);
+
+			var compiledMapping = mm.CompileMappingForAllExplicitAddedEntities();
+			var debugXml = compiledMapping.AsString();
+			cfg.AddDeserializedMapping(compiledMapping, "N2");
+		}
+
+		void ContentItemCustomization(IClassMapper<ContentItem> ca)
+		{
+			ca.Table(tablePrefix + "Item");
+			ca.Lazy(false);
+			ca.Cache(cm => { cm.Usage(CacheUsage.NonstrictReadWrite); });
+			ca.Id(x => x.ID, cm => { cm.Generator(Generators.Native); });
+			ca.Discriminator(cm => { cm.Column("Type"); cm.Type(NHibernateUtil.String); });
+			ca.Property(x => x.Created, cm => { });
+			ca.Property(x => x.Published, cm => { });
+			ca.Property(x => x.Updated, cm => { });
+			ca.Property(x => x.Expires, cm => { });
+			ca.Property(x => x.Name, cm => { cm.Length(250); });
+			ca.Property(x => x.ZoneName, cm => { cm.Length(50); });
+			ca.Property(x => x.TemplateKey, cm => { cm.Length(50); });
+			ca.Property(x => x.TranslationKey, cm => { });
+			ca.Property(x => x.Title, cm => { cm.Length(250); });
+			ca.Property(x => x.SortOrder, cm => { });
+			ca.Property(x => x.Visible, cm => { });
+			ca.Property(x => x.SavedBy, cm => { cm.Length(50); });
+			ca.Property(x => x.State, cm => { });
+			ca.Property(x => x.AncestralTrail, cm => { cm.Length(100); });
+			ca.Property(x => x.VersionIndex, cm => { });
+			ca.Property(x => x.AlteredPermissions, cm => { });
+			ca.ManyToOne(x => x.VersionOf, cm => { cm.Column("VersionOfID"); cm.Lazy(LazyRelation.Proxy); cm.Fetch(FetchKind.Select); });
+			ca.ManyToOne(x => x.Parent, cm => { cm.Column("ParentID"); cm.Lazy(LazyRelation.Proxy); cm.Fetch(FetchKind.Select); });
+			ca.Bag(x => x.Children, cm =>
 			{
-				string mappingXml = reader.ReadToEnd();
-				mappingXml = FormatMapping(mappingXml);
-				cfg.AddXml(mappingXml);
-			}
+				cm.Key(k => k.Column("ParentID"));
+				cm.Inverse(true);
+				cm.Type<ContentItemListFactory<ContentItem>>();
+				cm.Cascade(Cascade.All);
+				cm.OrderBy(ci => ci.SortOrder);
+				cm.Lazy(childrenLaziness);
+				cm.BatchSize(batchSize);
+				cm.Cache(m => m.Usage(CacheUsage.NonstrictReadWrite));
+			}, cr => cr.OneToMany());
+			ca.Bag(x => x.Details, cm =>
+			{
+				cm.Key(k => k.Column("ItemID"));
+				cm.Inverse(true);
+				cm.Type<ContentListFactory<ContentDetail>>();
+				cm.Cascade(Cascade.All | Cascade.DeleteOrphans);
+				cm.Fetch(CollectionFetchMode.Subselect);
+				cm.Lazy(CollectionLazy.Lazy);
+				cm.Cache(m => m.Usage(CacheUsage.NonstrictReadWrite));
+				cm.Where("DetailCollectionID IS NULL");
+			}, cr => cr.OneToMany());
+			ca.Bag(x => x.DetailCollections, cm =>
+			{
+				cm.Key(k => k.Column("ItemID"));
+				cm.Inverse(true);
+				cm.Type<ContentListFactory<DetailCollection>>();
+				cm.Cascade(Cascade.All | Cascade.DeleteOrphans);
+				cm.Fetch(CollectionFetchMode.Subselect);
+				cm.Lazy(CollectionLazy.Lazy);
+				cm.Cache(m => m.Usage(CacheUsage.NonstrictReadWrite));
+			}, cr => cr.OneToMany());
+			ca.Bag(x => x.AuthorizedRoles, cm =>
+			{
+				cm.Key(k => k.Column("ItemID"));
+				cm.Inverse(true);
+				cm.Cascade(Cascade.All | Cascade.DeleteOrphans);
+				cm.Fetch(CollectionFetchMode.Subselect);
+				cm.Lazy(CollectionLazy.Lazy);
+				cm.Cache(m => m.Usage(CacheUsage.NonstrictReadWrite));
+			}, cr => cr.OneToMany());
+		}
+
+		void ContentDetailCustomization(IClassMapper<ContentDetail> ca)
+		{
+			ca.Table(tablePrefix + "Detail");
+			ca.Lazy(false);
+			ca.Cache(cm => { cm.Usage(CacheUsage.NonstrictReadWrite); });
+			ca.Id(x => x.ID, cm => { cm.Generator(Generators.Native); });
+			ca.ManyToOne(x => x.EnclosingItem, cm => { cm.Column("ItemID"); cm.NotNullable(true); cm.Fetch(FetchKind.Select); });
+			ca.ManyToOne(x => x.EnclosingCollection, cm => { cm.Column("DetailCollectionID"); cm.Fetch(FetchKind.Select); cm.Lazy(LazyRelation.Proxy); });
+			ca.Property(x => x.ValueTypeKey, cm => { cm.Column("Type"); cm.Length(10); });
+			ca.Property(x => x.Name, cm => { cm.Length(50); });
+			ca.Property(x => x.BoolValue, cm => { });
+			ca.Property(x => x.DateTimeValue, cm => { });
+			ca.Property(x => x.IntValue, cm => { });
+			ca.ManyToOne(x => x.LinkedItem, cm => { cm.Column("LinkValue"); cm.Lazy(LazyRelation.Proxy); cm.Cascade(Cascade.None); });
+			ca.Property(x => x.DoubleValue, cm => { });
+			ca.Property(x => x.StringValue, cm => { cm.Type(NHibernateUtil.StringClob); cm.Length(stringLength); });
+			ca.Property(x => x.ObjectValue, cm => { cm.Column("Value"); cm.Type(NHibernateUtil.Serializable); cm.Length(2147483647); });
+		}
+
+		void DetailCollectionCustomization(IClassMapper<DetailCollection> ca)
+		{
+			ca.Table(tablePrefix + "DetailCollection");
+			ca.Lazy(false);
+			ca.Cache(cm => { cm.Usage(CacheUsage.NonstrictReadWrite); });
+			ca.Id(x => x.ID, cm => { cm.Generator(Generators.Native); });
+			ca.ManyToOne(x => x.EnclosingItem, cm => { cm.Column("ItemID"); });
+			ca.Property(x => x.Name, cm => { cm.Length(50); cm.NotNullable(true); });
+			ca.Bag(x => x.Details, cm =>
+			{
+				cm.Key(k => k.Column("DetailCollectionID"));
+				cm.Inverse(true);
+				cm.Cascade(Cascade.All | Cascade.DeleteOrphans);
+				cm.Lazy(CollectionLazy.Lazy);
+				cm.Fetch(CollectionFetchMode.Subselect);
+				cm.Cache(m => m.Usage(CacheUsage.NonstrictReadWrite));
+			}, cr => cr.OneToMany());
+		}
+
+		void AuthorizedRoleCustomization(IClassMapper<AuthorizedRole> ca)
+		{
+			ca.Table(tablePrefix + "AllowedRole");
+			ca.Lazy(false);
+			ca.Cache(cm => { cm.Usage(CacheUsage.NonstrictReadWrite); });
+			ca.Id(x => x.ID, cm => { cm.Generator(Generators.Native); });
+			ca.ManyToOne(x => x.EnclosingItem, cm => { cm.Column("ItemID"); cm.NotNullable(true); });
+			ca.Property(x => x.Role, cm => { cm.Length(50); cm.NotNullable(true); });
 		}
 
 		private string FormatMapping(string mappingXml)
@@ -275,7 +389,7 @@ namespace N2.Persistence.NH
 			return mappingXml.Replace("{TablePrefix}", tablePrefix)
 				.Replace("{StringLength}", stringLength.ToString())
 				.Replace("{BatchSize}", batchSize.ToString())
-				.Replace("{ChildrenLaziness}", childrenLaziness);
+				.Replace("{ChildrenLaziness}", childrenLaziness.ToString().ToLower());
 		}
 
 		protected virtual void AddMappings(NHibernate.Cfg.Configuration cfg)
@@ -299,9 +413,12 @@ namespace N2.Persistence.NH
 
 					using (StreamReader reader = new StreamReader(stream))
 					{
-						string mappingXml = reader.ReadToEnd();
+						var mappingXml = reader.ReadToEnd();
 						mappingXml = FormatMapping(mappingXml);
-						cfg.AddXml(mappingXml);
+
+						var xmlReader = new XmlTextReader(mappingXml, XmlNodeType.Document, null);
+						var mappingDocument = cfg.LoadMappingDocument(xmlReader, "N2");
+						cfg.AddDeserializedMapping(mappingDocument.Document, mappingDocument.Name);
 					}
 				}
 			}
@@ -320,31 +437,17 @@ namespace N2.Persistence.NH
 		/// <param name="cfg">The nhibernate configuration to build.</param>
 		protected virtual void GenerateMappings(NHibernate.Cfg.Configuration cfg)
 		{
-			Debug.Write("Adding");
-			StringBuilder mappings = new StringBuilder(mappingStartTag);
-
 			var definitions = definitionProviders.SelectMany(dp => dp.GetDefinitions()).ToList();
 			var allTypes = definitions
 				.Select(d => d.ItemType)
 				.SelectMany(t => Utility.GetBaseTypesAndSelf(t))
 				.Distinct()
 				.Where(t => t.IsSubclassOf(typeof(ContentItem)))
+				.Where(t => !IsMapped(cfg, t))
 				.OrderBy(t => Utility.InheritanceDepth(t))
 				.ToList();
 
-			foreach(var type in allTypes)
-			{
-				string discriminator = type.Name;
-				var definition = definitions.FirstOrDefault(d => d.ItemType == type);
-				if(definition != null)
-					discriminator = definition.Discriminator ?? discriminator;
-
-				string classMapping = generator.GetMapping(type, type.BaseType, discriminator);
-				mappings.Append(classMapping);
-			}
-
-			mappings.Append(mappingEndTag);
-			cfg.AddXml(FormatMapping(mappings.ToString()));
+			generator.MapTypes(allTypes, cfg, FormatMapping);
 		}
 
 		private bool AddedMappingFromHbmResource(ItemDefinition definition, NHibernate.Cfg.Configuration cfg)
@@ -376,6 +479,8 @@ namespace N2.Persistence.NH
 		/// <param name="cfg"></param>
 		protected virtual void AddProperties(NHibernate.Cfg.Configuration cfg)
 		{
+			cfg.LinqToHqlGeneratorsRegistry<WhereDetailHqlGeneratorRegistry>();
+
 			foreach (KeyValuePair<string, string> pair in Properties)
 			{
 				cfg.SetProperty(pair.Key, pair.Value);

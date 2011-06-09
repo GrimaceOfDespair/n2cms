@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Web;
 
 namespace N2.Engine.Providers
@@ -13,6 +10,8 @@ namespace N2.Engine.Providers
 
 		public HttpContextBase Get()
 		{
+			if (HttpContext.Current == null)
+				return null;
 			return new HttpContextWrapper(HttpContext.Current);
 		}
 

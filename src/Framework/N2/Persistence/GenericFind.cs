@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using N2.Web;
 using N2.Definitions;
+using N2.Web;
 
 namespace N2.Persistence
 {
@@ -45,13 +45,15 @@ namespace N2.Persistence
 			return ClosestPage(partOrPage);
 		}
 
-		/// <summary>Gets the currently displayed page (based on the query string).</summary>
-		public static ContentItem ClosestPage(ContentItem page)
+		/// <summary>Gets the closest ancestor page.</summary>
+		/// <param name="pageOrPart">The part whose page to get.</param>
+		/// <returns>The given item if it's a page otherwise the closest ancestor that is a page.</returns>
+		public static ContentItem ClosestPage(ContentItem pageOrPart)
 		{
-			if (page == null || page.IsPage)
-				return page;
+			if (pageOrPart == null || pageOrPart.IsPage)
+				return pageOrPart;
 
-			return ClosestPage(page.Parent);
+			return ClosestPage(pageOrPart.Parent);
 		}
 
 		/// <summary>

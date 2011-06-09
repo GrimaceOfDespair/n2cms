@@ -1,16 +1,31 @@
-using System.Text;
-using System.Web.UI;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Web.UI;
 using N2.Web.UI.WebControls;
+using System;
 
 namespace N2.Web
 {
 	/// <summary>
 	/// A link representation that can be conver to text or an anchor control.
 	/// </summary>
-	public class Link : ILinkBuilder
+	public class Link : 
+#if NET4
+		System.Web.IHtmlString, 
+#endif
+		ILinkBuilder
 	{
+		#region Static
+
+		static Link()
+		{
+			LinkFactory = (linkTarget) => new Link(linkTarget);
+		}
+		public static Func<ILink, ILinkBuilder> LinkFactory { get; set; }
+		
+		#endregion
+
 		#region Fields
 
 		private string text;
@@ -58,7 +73,7 @@ namespace N2.Web
 		}
 
 		public Link(ContentItem item, string className)
-			: this(string.Empty, string.Empty, string.Empty, item.Url, className)
+			: this(string.Empty, string.Empty, string.Empty, string.Empty, className)
 		{
 			UpdateFrom(item);
 		}
@@ -146,7 +161,7 @@ namespace N2.Web
 
 		public static ILinkBuilder To(ILink linkTarget)
 		{
-			return new Link(linkTarget);
+			return LinkFactory(linkTarget);
 		}
 
 		#endregion
@@ -209,6 +224,15 @@ namespace N2.Web
 		{
 			this.url = url.SetFragment(fragment);
 			return this;
+		}
+
+		#endregion
+
+		#region IHtmlString Members
+
+		public string ToHtmlString()
+		{
+			return ToString();
 		}
 
 		#endregion
