@@ -31,7 +31,7 @@ namespace N2.Details
 		{
 			var httpContext = new HttpContextWrapper(HttpContext.Current);
 			var routeData = new RouteData();
-			routeData.ApplyCurrentItem("webforms", "index", item.ClosestPage(), item);
+			RouteExtensions.ApplyCurrentItem(routeData, "webforms", "index", item.ClosestPage(), item);
 			return new HtmlHelper(
 				new ViewContext(
 					new ControllerContext() { HttpContext = httpContext, RequestContext = new RequestContext(httpContext, routeData), RouteData = routeData },
@@ -107,13 +107,20 @@ namespace N2.Details
 					string tokenTemplate = detail.StringValue.TextUntil(2, '|', '}');
 
 					ViewEngineResult vr = null;
-					try
+					if (context.Html.ViewContext.HttpContext.IsCustomErrorEnabled)
 					{
-						vr = ViewEngines.Engines.FindPartialView(context.Html.ViewContext, "TokenTemplates/" + tokenTemplate);
+						try
+						{
+							vr = ViewEngines.Engines.FindPartialView(context.Html.ViewContext, "TokenTemplates/" + tokenTemplate);
+						}
+						catch (System.Exception ex)
+						{
+							Trace.WriteLine(ex);
+						}
 					}
-					catch (System.Exception ex)
+					else
 					{
-						Trace.WriteLine(ex);
+						vr = ViewEngines.Engines.FindPartialView(context.Html.ViewContext, "TokenTemplates/" + tokenTemplate); // duplicated to preserve stack trace
 					}
 					if (vr != null && vr.View != null)
 					{

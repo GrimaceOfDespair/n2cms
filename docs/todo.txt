@@ -1,3 +1,13 @@
+- navigation add thingy
+- quick edit editable
+- select only pages for navigation
+- file names with _ (discussions/265070)
+- reproduce lucene problems (discussions/262292)
+- allowed zones in dinamico view templates (discussions/263700)
+- fix fist-time installation lucene error leaving lock
+- master page in themes directory
+- save&preview and editablechildren (workitem/30541)
+- nuget issues http://n2cms.codeplex.com/discussions/260635
 - contenttype from model discussions/259496
 - extend user screen (discussions/257790)
 - document security (http://n2cms.codeplex.com/discussions/257790)
@@ -10,10 +20,7 @@
 - index template replaces default
 - static parts
 - fix wiki (ThreadId=243022)
-- property interception to detail collections
 - property interception avoid proceeding unecessarily
-- folder picker (ThreadId=240497)
-- limit number of items in a zone (ThreadId=241156)
 - show path in screens
 - modal file selectors
 - change to ordinal string comparisons

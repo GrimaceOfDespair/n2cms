@@ -71,6 +71,16 @@ namespace N2.Web.Mvc.Html
 			return registration.RegisterEditable<EditableFileUploadAttribute>(name, title);
 		}
 
+		public static EditableBuilder<EditableMediaUploadAttribute> MediaUpload(this IContentRegistration registration, string name, string title = null)
+		{
+			return registration.RegisterEditable<EditableMediaUploadAttribute>(name, title);
+		}
+
+		public static EditableBuilder<EditableFolderSelectionAttribute> FolderSelection(this IContentRegistration registration, string name, string title = null)
+		{
+			return registration.RegisterEditable<EditableFolderSelectionAttribute>(name, title);
+		}
+
 		public static EditableBuilder<EditableFreeTextAreaAttribute> FreeText(this IContentRegistration registration, string name, string title = null)
 		{
 			return registration.RegisterEditable<EditableFreeTextAreaAttribute>(name, title);
@@ -161,6 +171,11 @@ namespace N2.Web.Mvc.Html
 		public static Builder<RestrictChildrenAttribute> RestrictChildren(this IContentRegistration registration, params string[] allowedChildTemplateKeys)
 		{
 			return registration.RegisterRefiner<RestrictChildrenAttribute>(new RestrictChildrenAttribute(AllowedTypes.All) { TemplateNames = allowedChildTemplateKeys });
+		}
+
+		public static EditableBuilder<EditableTagsAttribute> Tags(this IContentRegistration registration, string name)
+		{
+			return registration.RegisterEditable<EditableTagsAttribute>(name, name);
 		}
 	}
 

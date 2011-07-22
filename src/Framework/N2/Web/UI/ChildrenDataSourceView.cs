@@ -1,9 +1,11 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Web;
 using System.Web.UI;
 using N2.Definitions;
 using N2.Persistence;
+using N2.Security;
 
 namespace N2.Web.UI
 {
@@ -13,7 +15,7 @@ namespace N2.Web.UI
 		#region Private Fields
 		private ContentItem parentItem = null;
 		private Collections.ItemList allItems = null;
-        private Collections.CompositeFilter filter;
+        private Collections.AllFilter filter;
 		#endregion
 
 		#region Constructors
@@ -36,7 +38,7 @@ namespace N2.Web.UI
 			}
         }
 
-        public Collections.CompositeFilter Filter
+        public Collections.AllFilter Filter
         {
             get { return filter; }
             set { filter = value; }
@@ -45,7 +47,7 @@ namespace N2.Web.UI
         [Obsolete("Use Filter instaed")]
 		public IEnumerable<Collections.ItemFilter> Filters
 		{
-			set { filter = new Collections.CompositeFilter(value); }
+			set { filter = new Collections.AllFilter(value); }
 		}
 
 		public string SortBy { get; set; }
@@ -81,15 +83,16 @@ namespace N2.Web.UI
 			if (e.AffectedItem != null)
 			{
 				IDefinitionManager definitions = Engine.Definitions;
+				ISecurityManager security = Engine.SecurityManager;
 				ContentActivator activator = Engine.Resolve<ContentActivator>();
 				ItemDefinition parentDefinition = definitions.GetDefinition(parentItem);
 
-				if (parentDefinition.IsChildAllowed(definitions, parentDefinition))
+				if (parentDefinition.IsChildAllowed(definitions, parentItem, parentDefinition))
 				{
 					e.AffectedItem = Engine.Resolve<ContentActivator>().CreateInstance(parentItem.GetContentType(), parentItem);
 					return;
 				}
-				foreach (ItemDefinition definition in definitions.GetAllowedChildren(parentItem, null, HttpContext.Current.User))
+				foreach (ItemDefinition definition in definitions.GetAllowedChildren(parentItem, null).WhereAuthorized(security, HttpContext.Current.User, parentItem))
 				{
 					e.AffectedItem = activator.CreateInstance(definition.ItemType, parentItem);
 					return;

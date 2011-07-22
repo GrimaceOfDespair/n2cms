@@ -312,6 +312,8 @@ namespace N2.Web
 		/// <returns>An url without the hash part.</returns>
 		public static string RemoveHash(string url)
 		{
+			if (url == null) return null;
+
 			int hashIndex = url.IndexOf('#');
 			if (hashIndex >= 0)
 				url = url.Substring(0, hashIndex);
@@ -323,12 +325,20 @@ namespace N2.Web
 		/// <returns>An Url object or null if the input was null.</returns>
 		public static Url Parse(string url)
 		{
-			if (url == null)
-				return null;
+			if (url == null) return null;
+
 			if (url.StartsWith("~"))
 				url = ToAbsolute(url);
 
 			return new Url(url);
+		}
+
+		/// <summary>Converts a string URI to an Url class. The method will make any app-relative managementUrls absolute and resolve tokens within the url string.</summary>
+		/// <param name="url">The URI to parse.</param>
+		/// <returns>An Url object or null if the input was null.</returns>
+		public static Url ParseTokenized(string url)
+		{
+			return Url.Parse(ResolveTokens(url));
 		}
 
 		public string GetQuery(string key)

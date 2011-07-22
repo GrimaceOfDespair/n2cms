@@ -50,7 +50,7 @@ namespace N2.Web.Mvc
 
 		public ContentRoute(IEngine engine, IRouteHandler routeHandler, IControllerMapper controllerMapper, Route innerRoute)
 		{
-			managementPath = engine.ManagementPaths.GetManagementInterfaceUrl().ToUrl().ApplicationRelativePath;
+			managementPath = Url.ToRelative(Url.ResolveTokens(Url.ManagementUrlToken + "/"));
 			this.engine = engine;
 			this.routeHandler = routeHandler ?? new MvcRouteHandler();
 			this.controllerMapper = controllerMapper ?? engine.Resolve<IControllerMapper>();
@@ -169,7 +169,7 @@ namespace N2.Web.Mvc
 			foreach (var tokenPair in innerRoute.DataTokens)
 				data.DataTokens[tokenPair.Key] = tokenPair.Value;
 
-			data.ApplyCurrentItem(controllerName, actionName, page, part);
+			RouteExtensions.ApplyCurrentItem(data, controllerName, actionName, page, part);
 			data.DataTokens[ContentEngineKey] = engine;
 
 			return data;

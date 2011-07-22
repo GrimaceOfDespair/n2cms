@@ -681,7 +681,7 @@ namespace N2
         public virtual ItemList GetChildren(string childZoneName)
         {
 			return GetChildren(
-                new CompositeFilter(
+                new AllFilter(
                     new ZoneFilter(childZoneName), 
                     new AccessFilter()));
         }
@@ -691,7 +691,7 @@ namespace N2
 		/// <returns>A list of filtered child items.</returns>
 		public virtual ItemList GetChildren(params ItemFilter[] filters)
 		{
-			return GetChildren(new CompositeFilter(filters));
+			return GetChildren(new AllFilter(filters));
 		}
 
 		/// <summary>Gets children applying filters.</summary>
@@ -1048,7 +1048,34 @@ namespace N2
 
 		#endregion
 
-		#region IInterceptable Members
+		#region IInterceptableType Members
+
+		void IInterceptableType.SetValue(string detailName, object value, Type valueType)
+		{
+			SetDetail(detailName, value, valueType);
+		}
+
+		object IInterceptableType.GetValue(string detailName)
+		{
+			return GetDetail(detailName);
+		}
+
+		void IInterceptableType.SetValues(string detailCollectionName, System.Collections.IEnumerable values)
+		{
+			if (values == null)
+			{
+				if (DetailCollections.ContainsKey(detailCollectionName))
+					DetailCollections.Remove(detailCollectionName);
+				return;
+			}
+			var collection = GetDetailCollection(detailCollectionName, true);
+			collection.Replace(values);
+		}
+
+		System.Collections.IEnumerable IInterceptableType.GetValues(string detailCollectionName)
+		{
+			return GetDetailCollection(detailCollectionName, false);
+		}
 
 		public virtual Type GetContentType()
 		{

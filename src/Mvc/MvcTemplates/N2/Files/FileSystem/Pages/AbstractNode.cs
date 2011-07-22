@@ -4,11 +4,15 @@ using N2.Engine;
 using N2.Security;
 using N2.Web;
 using N2.Web.Drawing;
+using N2.Persistence.Search;
 
 namespace N2.Edit.FileSystem.Items
 {
-    [Throwable(AllowInTrash.No), Versionable(AllowVersions.No), PermissionRemap(From = Permission.Publish, To = Permission.Write)]
-	public abstract class AbstractNode : ContentItem, INode, IInjectable<IFileSystem>, ISystemNode
+    [Throwable(AllowInTrash.No)]
+	[Versionable(AllowVersions.No)]
+	[PermissionRemap(From = Permission.Publish, To = Permission.Write)]
+	[Indexable(IsIndexable = false)]
+	public abstract class AbstractNode : ContentItem, INode, IFileSystemNode, IInjectable<IFileSystem>
     {
 		IFileSystem fileSystem;
 		protected string iconUrl;

@@ -86,15 +86,49 @@ namespace N2.Definitions
 			return definitionProviders.SelectMany(dp => dp.GetDefinitions());
 		}
 
+		/// <summary>Gets child types allowed below a certain item and zone.</summary>
+		/// <param name="parentItem">The parent item whose allowed children to get.</param>
+		/// <returns>A list of definitions allowed by the given criterias.</returns>
+		public virtual IEnumerable<ItemDefinition> GetAllowedChildren(ContentItem parentItem)
+		{
+			var definition = GetDefinition(parentItem);
+			var allowedChildItems = definition.GetAllowedChildren(this, parentItem)
+				.ToList();
+			allowedChildItems.Sort();
+			return allowedChildItems;
+		}
+
+		/// <summary>Gets child types allowed below a certain item and zone.</summary>
+		/// <param name="parentItem">The parent item whose allowed children to get.</param>
+		/// <param name="zoneName">The zone name.</param>
+		/// <returns>A list of definitions allowed by the given criterias.</returns>
+		public virtual IEnumerable<ItemDefinition> GetAllowedChildren(ContentItem parentItem, string zoneName)
+		{
+			return GetAllowedChildren(parentItem)
+				.Where(d => d.IsAllowedInZone(zoneName));
+		}
+
 		/// <summary>Gets items allowed below this item in a certain zone.</summary>
 		/// <param name="parentItem">The parent whose allowed children to get.</param>
 		/// <param name="zoneName">The zone whose allowed child item types to get.</param>
 		/// <param name="user">The user whose access to query.</param>
 		/// <returns>A list of items allowed in the zone the user is authorized to create.</returns>
+		[Obsolete("Use GetAllowedChildren(parentItem, zoneName).Where(d => Security.IsAuthorized(d, ...))")]
 		public virtual IList<ItemDefinition> GetAllowedChildren(ContentItem parentItem, string zoneName, IPrincipal user)
 		{
-			var definition = GetDefinition(parentItem);
-			var allowedChildItems = definition.GetAllowedChildren(this, parentItem).Where(d => d.IsAllowed(zoneName, user)).ToList();
+			return GetAllowedChildren(parentItem, zoneName)
+				.Where(d => d.IsAuthorized(user)).ToList();
+		}
+
+		/// <summary>Gets items allowed below this item in a certain zone.</summary>
+		/// <param name="parentItem">The parent whose allowed children to get.</param>
+		/// <param name="zoneName">The zone whose allowed child item types to get.</param>
+		/// <param name="user">The user whose access to query.</param>
+		/// <returns>A list of items allowed in the zone the user is authorized to create.</returns>
+		[Obsolete("Use GetAllowedChildren(parentItem, ...)")]
+		public virtual IList<ItemDefinition> GetAllowedChildren(ItemDefinition parentDefinition, string zoneName, IPrincipal user)
+		{
+			var allowedChildItems = parentDefinition.GetAllowedChildren(this, null).Where(d => d.IsAllowed(zoneName, user)).ToList();
 			allowedChildItems.Sort();
 			return allowedChildItems;
 		}
@@ -137,7 +171,7 @@ namespace N2.Definitions
 			activator.ItemCreated += activator_ItemCreated;
 			stateChanger.StateChanged += stateChanger_StateChanged;
 
-			activator.Initialize(definitionProviders.SelectMany(dp => dp.GetDefinitions()).Select(d => d.ItemType));
+			activator.Initialize(GetDefinitions().Select(d => d.ItemType));
 		}
 
 		public void Stop()

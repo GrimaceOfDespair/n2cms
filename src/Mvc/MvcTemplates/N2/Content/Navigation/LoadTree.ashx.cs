@@ -26,12 +26,14 @@ namespace N2.Edit.Navigation
 				.Children((item) => adapters.ResolveAdapter<NodeAdapter>(item).GetChildren(item, Interfaces.Managing))
 				.Build();
 
+			string selectableTypes = context.Request["selectableTypes"];
+			string selectableExtensions = context.Request["selectableExtensions"];
 			TreeNode tn = (TreeNode)new N2.Web.Tree(root)
-				.LinkProvider(node => Web.UI.Controls.Tree.BuildLink(adapters.ResolveAdapter<NodeAdapter>(node), node, node.Path == selectedNode.Path, target))
+				.LinkWriter((n, w) => Web.UI.Controls.Tree.BuildLink(adapters.ResolveAdapter<NodeAdapter>(n.Current), n.Current, n.Current.Path == selectedNode.Path, target, N2.Edit.Web.UI.Controls.Tree.IsSelectable(n.Current, selectableTypes, selectableExtensions)).WriteTo(w))
 				.Filters(filter)
 				.ToControl();
 
-			Web.UI.Controls.Tree.AppendExpanderNodeRecursive(tn, filter, target, adapters);
+			Web.UI.Controls.Tree.AppendExpanderNodeRecursive(tn, filter, target, adapters, selectableTypes, selectableExtensions);
 
 			RenderControls(tn.Controls, context.Response.Output);
 		}

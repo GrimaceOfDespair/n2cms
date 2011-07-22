@@ -17,6 +17,9 @@ using NHibernate;
 using NHibernate.Cfg;
 using NHibernate.Mapping;
 using NHibernate.Mapping.ByCode;
+using NHibernate.AdoNet;
+using Environment = NHibernate.Cfg.Environment;
+using NHibernate.Driver;
 
 namespace N2.Persistence.NH
 {
@@ -35,9 +38,8 @@ namespace N2.Persistence.NH
 		IDictionary<string, string> properties = new Dictionary<string, string>();		
 		IList<Assembly> assemblies = new List<Assembly>();
 		IList<string> mappingNames = new List<string>();
-		string defaultMapping = "N2.Persistence.NH.Mappings.Default.hbm.xml,N2";
 		string tablePrefix = "n2";
-		int batchSize = 25;
+		int? batchSize = 25;
 		CollectionLazy childrenLaziness = CollectionLazy.Extra;
 		int stringLength = 1073741823;
 		bool tryLocatingHbmResources = false;
@@ -51,17 +53,13 @@ namespace N2.Persistence.NH
 			this.participators = participators;
 
 			if (config == null) config = new DatabaseSection();
-
-			if (!string.IsNullOrEmpty(config.HibernateMapping))
-				DefaultMapping = config.HibernateMapping;
-
-			SetupProperties(config, connectionStrings);
-			SetupMappings(config);
-
 			TryLocatingHbmResources = config.TryLocatingHbmResources;
 			tablePrefix = config.TablePrefix;
 			batchSize = config.BatchSize;
 			childrenLaziness = config.ChildrenLaziness;
+
+			SetupProperties(config, connectionStrings);
+			SetupMappings(config);
 		}
 
 		private void SetupMappings(DatabaseSection config)
@@ -87,6 +85,15 @@ namespace N2.Persistence.NH
 
 			SetupFlavourProperties(config, connectionStrings);
 
+			bool useNonBatcher = 
+				// configured batch size <= 1
+				(batchSize.HasValue && batchSize.Value <= 1)
+				// medium trust in combination with sql client driver 
+				// causes fault: Attempt by method 'NHibernate.AdoNet.SqlClientSqlCommandSet..ctor()' to access method 'System.Data.SqlClient.SqlCommandSet..ctor()' failed.   at System.RuntimeTypeHandle.CreateInstance(RuntimeType type, Boolean publicOnly, Boolean noCheck, Boolean& canBeCached, RuntimeMethodHandleInternal& ctor, Boolean& bNeedSecurityCheck)
+				|| (Utility.GetTrustLevel() <= System.Web.AspNetHostingPermissionLevel.Medium && typeof(SqlClientDriver).IsAssignableFrom(Type.GetType(Properties[Environment.ConnectionDriver])));
+			if (useNonBatcher)
+				Properties[NHibernate.Cfg.Environment.BatchStrategy] = typeof(NonBatchingBatcherFactory).AssemblyQualifiedName;
+
 			SetupCacheProperties(config);
 
 			// custom config properties
@@ -97,7 +104,7 @@ namespace N2.Persistence.NH
 			}
 		}
 
-		private void SetupFlavourProperties(DatabaseSection config, ConnectionStringsSection connectionStrings)
+		private DatabaseFlavour SetupFlavourProperties(DatabaseSection config, ConnectionStringsSection connectionStrings)
 		{
 			DatabaseFlavour flavour = config.Flavour;
 			if (flavour == DatabaseFlavour.AutoDetect)
@@ -172,6 +179,7 @@ namespace N2.Persistence.NH
 				default:
 					throw new ConfigurationErrorsException("Couldn't determine database flavour. Please check the 'flavour' attribute of the n2/database configuration section.");
 			}
+			return flavour;
 		}
 
 		private DatabaseFlavour DetectFlavor(ConnectionStringSettings css)
@@ -219,13 +227,6 @@ namespace N2.Persistence.NH
 		{
 			get { return properties; }
 			set { properties = value; }
-		}
-
-		/// <summary>Gets or sets a path to an embedded mapping file that are always added to the NHibernate configuration. Items should be in manifest resource stream format followed by a comma and the assembly name, e.g. "N2.Mappings.MySQL.hbm.xml,N2".</summary>
-		public string DefaultMapping
-		{
-			get { return defaultMapping; }
-			set { defaultMapping = value; }
 		}
 
 		#endregion
@@ -301,7 +302,7 @@ namespace N2.Persistence.NH
 				cm.Cascade(Cascade.All);
 				cm.OrderBy(ci => ci.SortOrder);
 				cm.Lazy(childrenLaziness);
-				cm.BatchSize(batchSize);
+				cm.BatchSize(batchSize ?? 25);
 				cm.Cache(m => m.Usage(CacheUsage.NonstrictReadWrite));
 			}, cr => cr.OneToMany());
 			ca.Bag(x => x.Details, cm =>
@@ -427,7 +428,7 @@ namespace N2.Persistence.NH
 		protected Stream GetStreamFromName(string name)
 		{
 			string[] pathAssemblyPair = name.Split(',');
-			if (pathAssemblyPair.Length != 2) throw new ArgumentException("Expected the property DefaultMapping to be in the format [manifest resource path],[assembly name] but was: " + DefaultMapping);
+			if (pathAssemblyPair.Length != 2) throw new ArgumentException("Expected the property DefaultMapping to be in the format [manifest resource path],[assembly name] but was: " + name);
 
 			Assembly a = Assembly.Load(pathAssemblyPair[1]);
 			return a.GetManifestResourceStream(pathAssemblyPair[0]);
@@ -479,8 +480,6 @@ namespace N2.Persistence.NH
 		/// <param name="cfg"></param>
 		protected virtual void AddProperties(NHibernate.Cfg.Configuration cfg)
 		{
-			cfg.LinqToHqlGeneratorsRegistry<WhereDetailHqlGeneratorRegistry>();
-
 			foreach (KeyValuePair<string, string> pair in Properties)
 			{
 				cfg.SetProperty(pair.Key, pair.Value);

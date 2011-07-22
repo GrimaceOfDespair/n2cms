@@ -40,26 +40,26 @@ namespace N2.Persistence.Search
 		{
 			Trace.WriteLine("Clearing index");
 
-			var d = accessor.GetDirectory();
-			if (d.IndexExists())
+			if (accessor.IndexExists())
 			{
+				var d = accessor.GetDirectory();
 				d.ClearLock("write.lock"); ;
-				var w = accessor.GetWriter(d, accessor.GetAnalyzer());
+				var w = accessor.GetWriter();
 				if (w.NumDocs() > 0)
 				{
 					try
 					{
 						w.DeleteAll();
 						w.Commit();
-						w.WaitForMerges();
+						accessor.RecreateSearcher();
 					}
 					finally
 					{
-						w.Close(true);
+						//w.Close(true);
 					}
 				}
 				d.ClearLock("write.lock"); ;
-				d.Close();
+				//d.Close();
 			}
 		}
 
@@ -75,22 +75,23 @@ namespace N2.Persistence.Search
 		{
 			Trace.WriteLine("Optimizing index");
 
-			var d = accessor.GetDirectory();
-			if (d.IndexExists())
+			if (accessor.IndexExists())
 			{
-				var iw = accessor.GetWriter(d, accessor.GetAnalyzer());
+				var d = accessor.GetDirectory();
+				var iw = accessor.GetWriter();
 				if (iw.NumDocs() > 0)
 				{
 					try
 					{
 						iw.Optimize(true);
+						iw.Commit();
 					}
 					finally
 					{
-						iw.Close();
+						//iw.Close();
 					}
 				}
-				d.Close();
+				//d.Close();
 			}
 		}
 
@@ -98,7 +99,7 @@ namespace N2.Persistence.Search
 		/// <param name="item">The item containing content to be indexed.</param>
 		public virtual void Update(ContentItem item)
 		{
-			if(item == null)
+			if(item == null || item.ID == 0)
 				return;
 
 			Trace.WriteLine("Updating item #" + item.ID);
@@ -107,15 +108,14 @@ namespace N2.Persistence.Search
 			    Update(Find.ClosestPage(item));
 
 			var iw = accessor.GetWriter();
-			try
-			{
-				var doc = CreateDocument(item);
-				iw.UpdateDocument(new Term("ID", item.ID.ToString()), doc);
-			}
-			finally
-			{
-				iw.Close(waitForMerges:true);
-			}
+
+			if (!extractor.IsIndexable(item))
+				return;
+
+			var doc = CreateDocument(item);
+			iw.UpdateDocument(new Term("ID", item.ID.ToString()), doc);
+			iw.Commit();
+			accessor.RecreateSearcher();
 		}
 
 		/// <summary>Delets an item from the index and any descendants.</summary>
@@ -124,19 +124,19 @@ namespace N2.Persistence.Search
 		{
 			Trace.WriteLine("Deleting item #" + itemID);
 
-			var dir = accessor.GetDirectory();
-			var iw = accessor.GetWriter(dir, accessor.GetAnalyzer());
-			var s = accessor.GetSearcher(dir);
+			var iw = accessor.GetWriter();
+			var s = accessor.GetSearcher();
 			try
 			{
 				string trail = GetTrail(s, new Term("ID", itemID.ToString()));
 				var query = new PrefixQuery(new Term("Trail", trail));
 				iw.DeleteDocuments(query);
+				iw.Commit();
+				accessor.RecreateSearcher();
 			}
 			finally
 			{
-				iw.Flush(true, true, true);
-				iw.Close(waitForMerges:true);
+				//iw.Close(waitForMerges:true);
 			}
 		}
 
