@@ -24,7 +24,7 @@
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
-    <OldToolsVersion>3.5</OldToolsVersion>
+    <OldToolsVersion>4.0</OldToolsVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -1388,4 +1388,5 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
 </Project>

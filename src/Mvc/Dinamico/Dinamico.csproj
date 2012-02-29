@@ -14,6 +14,8 @@
     <AssemblyName>Dinamico</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <MvcBuildViews>false</MvcBuildViews>
+    <FileUpgradeFlags>0</FileUpgradeFlags>
+    <OldToolsVersion>4.0</OldToolsVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -200,10 +202,6 @@
     <ProjectReference Include="..\..\Framework\N2\N2.csproj">
       <Project>{F3C813FE-C51B-4C10-85E2-FD2560E73E72}</Project>
       <Name>N2</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Framework\Razor\N2.Razor.csproj">
-      <Project>{D701D33B-3FBB-440C-9AAE-F0E99DFF04F9}</Project>
-      <Name>N2.Razor</Name>
     </ProjectReference>
     <ProjectReference Include="..\MvcTemplates\N2.Management.csproj">
       <Project>{10F7C179-B92D-4FCA-B78C-011E428D0CA3}</Project>
@@ -424,4 +422,5 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
 </Project>

@@ -18,7 +18,7 @@
     <OptionInfer>On</OptionInfer>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
-    <OldToolsVersion>3.5</OldToolsVersion>
+    <OldToolsVersion>4.0</OldToolsVersion>
     <UpgradeBackupLocation />
     <UseIISExpress>false</UseIISExpress>
   </PropertyGroup>
@@ -164,4 +164,5 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
 </Project>
