@@ -3,6 +3,8 @@ using System.Diagnostics;
 using N2.Engine;
 using N2.Web;
 using NHibernate;
+using log4net;
+using N2.Configuration;
 
 namespace N2.Persistence.NH
 {
@@ -12,27 +14,26 @@ namespace N2.Persistence.NH
 	[Service(typeof(ISessionProvider))]
 	public class SessionProvider : ISessionProvider
 	{
+		private readonly ILog logger = LogManager.GetLogger(typeof(SessionProvider));
+
 		private static string RequestItemsKey = "SessionProvider.Session";
-		private IInterceptor interceptor;
+		private NHInterceptorFactory interceptorFactory;
 		private readonly IWebContext webContext;
 		private readonly ISessionFactory nhSessionFactory;
         private FlushMode flushAt = FlushMode.Commit;
+		private System.Data.IsolationLevel? isolation;
 
-		public SessionProvider(IConfigurationBuilder builder, IInterceptor interceptor, IWebContext webContext)
+		public SessionProvider(IConfigurationBuilder builder, NHInterceptorFactory interceptorFactory, IWebContext webContext, DatabaseSection config)
 		{
-            nhSessionFactory = builder.BuildSessionFactory();
-            Debug.WriteLine("Built Session Factory " + DateTime.Now);
-            this.webContext = webContext;
-            this.interceptor = interceptor;
-		}
-
-		public IInterceptor Interceptor
-		{
-			get { return interceptor; }
+			nhSessionFactory = builder.BuildSessionFactory();
+			logger.Debug("Built Session Factory " + DateTime.Now);
+			this.webContext = webContext;
+			this.interceptorFactory = interceptorFactory;
+			this.isolation = config.Isolation;
 		}
 
 		/// <summary>Gets the NHibernate session factory</summary>
-		public ISessionFactory NHSessionFactory
+		public ISessionFactory SessionFactory
 		{
 			get { return nhSessionFactory; }
 		}
@@ -56,7 +57,7 @@ namespace N2.Persistence.NH
                 SessionContext sc = CurrentSession;
                 if(sc == null)
                 {
-                    ISession s = nhSessionFactory.OpenSession(Interceptor);
+					ISession s = interceptorFactory.CreateSession(nhSessionFactory);
 				    s.FlushMode = FlushAt;
                     CurrentSession = sc = new SessionContext(this, s);
                 }
@@ -82,5 +83,10 @@ namespace N2.Persistence.NH
                 CurrentSession = null;
             }
         }
+
+		public ITransaction BeginTransaction()
+		{
+			return new NHTransaction(isolation, this);
+		}
 	}
 }

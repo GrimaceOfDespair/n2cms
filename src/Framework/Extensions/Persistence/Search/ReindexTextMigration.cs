@@ -8,14 +8,14 @@ using N2.Engine;
 
 namespace N2.Persistence.Search
 {
-	[Service(typeof(AbstractMigration))]
+	[Service(typeof(AbstractMigration), Configuration = "lucene")]
 	public class ReindexTextMigration : AbstractMigration
 	{
-		IRepository<int, ContentItem> repository;
+		IRepository<ContentItem> repository;
 		IIndexer indexer;
 		LuceneAccesor accessor;
 
-		public ReindexTextMigration(IRepository<int, ContentItem> repository, IIndexer indexer, LuceneAccesor accessor)
+		public ReindexTextMigration(IRepository<ContentItem> repository, IIndexer indexer, LuceneAccesor accessor)
 		{
 			this.repository = repository;
 			this.indexer = indexer;
@@ -27,7 +27,7 @@ namespace N2.Persistence.Search
 
 		public override bool IsApplicable(DatabaseStatus status)
 		{
-			return accessor.GetDirectory().IndexExists() == false;
+			return accessor.IndexExists() == false;
 		}
 
 		public override MigrationResult Migrate(DatabaseStatus preSchemaUpdateStatus)
@@ -35,7 +35,7 @@ namespace N2.Persistence.Search
 			indexer.Clear();
 
 			int count = 0;
-			foreach (var item in repository.Find("VersionOf", null))
+			foreach (var item in repository.Find("VersionOf.ID", null))
 			{
 				indexer.Update(item);
 				count++;

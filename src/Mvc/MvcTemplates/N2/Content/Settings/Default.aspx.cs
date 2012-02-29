@@ -6,7 +6,7 @@ using N2.Web;
 
 namespace N2.Edit.Settings
 {
-	[ToolbarPlugin("SETTINGS", "settings", "{ManagementUrl}/Content/Settings/Default.aspx?selected={selected}", ToolbarArea.Options, "navigation", "{ManagementUrl}/Resources/icons/wrench.png", -10, 
+	[ToolbarPlugin("SETTINGS", "settings", "{ManagementUrl}/Content/Settings/Default.aspx?{Selection.SelectedQueryKey}={selected}", ToolbarArea.Options, "navigation", "{ManagementUrl}/Resources/icons/wrench.png", -10, 
 		ToolTip = "settings", 
 		GlobalResourceClassName = "Toolbar")]
 	public partial class Default : Web.EditPage
@@ -16,7 +16,7 @@ namespace N2.Edit.Settings
 			EditSection config = Engine.Resolve<EditSection>();
 			if (config == null) throw new ConfigurationErrorsException("Cannot find configuration n2/edit");
 
-			foreach(SettingsEditorElement element in config.SettingsEditors)
+			foreach(SettingsEditorElement element in config.SettingsEditors.AllElements)
 			{
 				Control editor = LoadControl(Url.ResolveTokens(element.Path));
 				phSettings.Controls.Add(editor);

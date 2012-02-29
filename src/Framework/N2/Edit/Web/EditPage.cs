@@ -8,6 +8,7 @@ using N2.Engine;
 using N2.Resources;
 using N2.Security;
 using N2.Web;
+using log4net;
 
 namespace N2.Edit.Web
 {
@@ -16,12 +17,20 @@ namespace N2.Edit.Web
 	/// selected item and refresh navigation.
 	/// </summary>
     public class EditPage : Page, IProvider<IEngine>
-    {
+	{
+		private readonly ILog logger = LogManager.GetLogger(typeof (EditPage));
+
 		protected override void OnPreInit(EventArgs e)
 		{
 			base.OnPreInit(e);
 			SetupAspNetTheming();
 			Authorize(User);
+		}
+
+		protected virtual void SetupClientConstants()
+		{
+			if(Page.Header != null)
+				this.JavaScript(Register.SelectedQueryKeyRegistrationScript(), ScriptOptions.Prioritize | ScriptOptions.ScriptTags);
 		}
 
 		/// <summary>Determines whether the current page can be displayed.</summary>
@@ -43,6 +52,7 @@ namespace N2.Edit.Web
 			RegisterThemeCss();
 			Response.Cache.SetCacheability(HttpCacheability.NoCache);
 			Response.ExpiresAbsolute = DateTime.Now.AddDays(-1);
+			SetupClientConstants();
 
             base.OnInit(e);
 		}
@@ -96,7 +106,9 @@ namespace N2.Edit.Web
         {
             if(!string.IsNullOrEmpty(Request["returnUrl"]))
                 return Request["returnUrl"];
-			var item = Selection.SelectedItem.VersionOf ?? Selection.SelectedItem;
+			var item = Selection.SelectedItem.VersionOf.HasValue
+				? Selection.SelectedItem.VersionOf.Value
+				: Selection.SelectedItem;
 			return NodeAdapter(item).GetPreviewUrl(item);
         }
 
@@ -150,74 +162,32 @@ namespace N2.Edit.Web
 
 		protected string MapCssUrl(string cssFileName)
 		{
-			return Engine.ManagementPaths.ResolveResourceUrl("{ManagementUrl}/Resources/Css/" + cssFileName);
+			return Url.ResolveTokens("{ManagementUrl}/Resources/Css/" + cssFileName);
 		}
 
     	#region Refresh Methods
-		private const string RefreshBothFormat = @"if(window.n2ctx) n2ctx.refresh({{ navigationUrl:'{1}', previewUrl:'{2}', path:'{4}', permission:'{5}' }});";
-		private const string RefreshNavigationFormat = @"if(window.n2ctx) n2ctx.refresh({{ navigationUrl:'{1}', path:'{4}', permission:'{5}' }});";
-		private const string RefreshPreviewFormat = @"if(window.n2ctx) n2ctx.refresh({{ previewUrl: '{2}', path:'{4}', permission:'{5}' }});";
-
+		
         protected virtual void Refresh(ContentItem item)
         {
-            string previewUrl = Engine.ManagementPaths.GetEditInterfaceUrl(Selection.SelectedItem);
-            string script = string.Format("window.top.location = '{0}';", previewUrl);
-
-            ClientScript.RegisterClientScriptBlock(
-                typeof(EditPage),
-                "RefreshScript",
-                script, true);
+            Page.RefreshManagementInterface(item);
         }
 
         protected virtual void Refresh(ContentItem item, string previewUrl)
         {
-            string script = string.Format(RefreshBothFormat,
-                Engine.ManagementPaths.GetEditInterfaceUrl(), // 0
-                GetNavigationUrl(item), // 1
-                Url.ToAbsolute(previewUrl), // 2
-                item.ID, // 3
-                item.Path, // 4
-				NodeAdapter(item).GetMaximumPermission(item)
-            );
-
-            ClientScript.RegisterClientScriptBlock(
-                typeof(EditPage),
-                "RefreshFramesScript",
-                script, true);
+            Page.RefreshPreviewFrame(item, previewUrl);
         }
 
         /// <summary>Referesh the selected frames after loading the page.</summary>
         /// <param name="item"></param>
         /// <param name="area"></param>
-		protected virtual void Refresh(ContentItem item, ToolbarArea area)
+		protected virtual void Refresh(ContentItem item, ToolbarArea area, bool force = true)
 		{
-			string script = GetRefreshScript(item, area);
-
-			ClientScript.RegisterClientScriptBlock(
-				typeof(EditPage),
-				"RefreshFramesScript",
-				script, true);
+            Page.RefreshFrames(item, area, force);
 		}
 
-		protected string GetRefreshScript(ContentItem item, ToolbarArea area)
+		protected string GetRefreshScript(ContentItem item, ToolbarArea area, bool force = true)
 		{
-			string format;
-			if (area == ToolbarArea.Both)
-				format = RefreshBothFormat;
-			else if (area == ToolbarArea.Preview)
-				format = RefreshPreviewFormat;
-			else
-				format = RefreshNavigationFormat;
-
-			string script = string.Format(format,
-				Engine.ManagementPaths.GetEditInterfaceUrl(), // 0
-				GetNavigationUrl(item), // 1
-				GetPreviewUrl(item), // 2
-				item.ID, // 3
-				item.Path, // 4
-				NodeAdapter(item).GetMaximumPermission(item)
-				);
-			return script;
+            return Page.GetRefreshFramesScript(item, area, force);
 		}
 
 		protected string GetNavigationUrl(ContentItem selectedItem)
@@ -227,7 +197,7 @@ namespace N2.Edit.Web
 
 		protected virtual string GetPreviewUrl(ContentItem selectedItem)
 		{
-			return Request["returnUrl"] ?? NodeAdapter(selectedItem).GetPreviewUrl(selectedItem);
+			return Page.GetPreviewUrl(Engine, selectedItem);
 		}
 		#endregion
 
@@ -272,7 +242,7 @@ namespace N2.Edit.Web
 		#region Error Handling
 		protected virtual void SetErrorMessage(BaseValidator validator, N2.Integrity.NameOccupiedException ex)
 		{
-			Trace.Write(ex.ToString());
+			logger.Debug(ex);
 
 			string message = string.Format(GetLocalResourceString("NameOccupiedExceptionFormat", "An item named \"{0}\" already exists below \"{1}\""),
 				ex.SourceItem.Name,
@@ -282,7 +252,7 @@ namespace N2.Edit.Web
 
 		protected void SetErrorMessage(BaseValidator validator, N2.Integrity.DestinationOnOrBelowItselfException ex)
 		{
-			Trace.Write(ex.ToString());
+			logger.Debug(ex);
 
 			string message = string.Format(GetLocalResourceString("DestinationOnOrBelowItselfExceptionFormat", "Cannot move an item to a destination onto or below itself"),
 				ex.SourceItem.Name,
@@ -291,7 +261,7 @@ namespace N2.Edit.Web
 		}
 		protected void SetErrorMessage(BaseValidator validator, N2.Definitions.NotAllowedParentException ex)
 		{
-			Trace.Write(ex.ToString());
+			logger.Debug(ex);
 
 			string message = string.Format(GetLocalResourceString("NotAllowedParentExceptionFormat", "The item of type \"{0}\" isn't allowed below a destination of type \"{1}\""),
 				ex.ItemDefinition.Title,

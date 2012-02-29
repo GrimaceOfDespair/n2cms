@@ -39,6 +39,16 @@ namespace N2.Web.Mvc
 
 		#endregion
 
+		public override bool Equals(object obj)
+		{
+			return inner.Equals(obj);
+		}
+
+		public override int GetHashCode()
+		{
+			return inner.GetHashCode();
+		}
+
 		private static void AppendRazorViewPath(ControllerContext controllerContext, ViewEngineResult result)
 		{
 			if (result.View == null)
@@ -48,7 +58,7 @@ namespace N2.Web.Mvc
 			if (viewContext == null)
 				return;
 
-			var re = RegistrationExtensions.GetRegistrationExpression(viewContext.ViewData);
+			var re = RegistrationExtensions.GetRegistrationExpression(viewContext.HttpContext);
 			if (re == null)
 				return;
 

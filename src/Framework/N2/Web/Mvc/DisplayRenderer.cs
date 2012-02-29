@@ -7,6 +7,9 @@ using N2.Web.Mvc.Html;
 using N2.Web.Rendering;
 using N2.Definitions.Runtime;
 using N2.Details;
+using N2.Web.UI.WebControls;
+using System.Diagnostics;
+using log4net;
 
 namespace N2.Web.Mvc
 {
@@ -16,7 +19,14 @@ namespace N2.Web.Mvc
 #endif
 		IDisplayRenderer where T : IDisplayable
 	{
+		private readonly ILog logger = LogManager.GetLogger(typeof (DisplayRenderer<T>));
+		private bool isEditable = RenderHelper.DefaultEditable;
+		private bool isOptional = RenderHelper.DefaultOptional;
+		private bool swallowExceptions = RenderHelper.DefaultSwallowExceptions;
+
 		public RenderingContext Context { get; set; }
+
+
 
 		public DisplayRenderer(RenderingContext context)
 		{
@@ -30,8 +40,43 @@ namespace N2.Web.Mvc
 			var template = html.ResolveService<IDefinitionManager>().GetTemplate(Context.Content);
 			if (template != null)
 				Context.Displayable = template.Definition.Displayables.FirstOrDefault(d => d.Name == propertyName);
+			if(!isOptional && Context.Displayable == null)
+				throw new N2Exception("No displayable registered for the name '{0}' of the item #{1} of type {2}", propertyName, Context.Content.ID, Context.Content.GetContentType());
 			Context.Html = html;
 			Context.PropertyName = propertyName;
+			Context.IsEditable = RenderHelper.DefaultEditable;
+		}
+
+
+
+		/// <summary>Control whether this property can be edited via the the UI when navigating using the drag-drop mode.</summary>
+		/// <param name="isEditable"></param>
+		/// <returns>The same object.</returns>
+		public DisplayRenderer<T> Editable(bool isEditable = true)
+		{
+			this.isEditable = isEditable;
+
+			return this;
+		}
+
+		/// <summary>Control whether this property can be edited via the the UI when navigating using the drag-drop mode.</summary>
+		/// <param name="isEditable"></param>
+		/// <returns>The same object.</returns>
+		public DisplayRenderer<T> SwallowExceptions(bool hideExceptions = true)
+		{
+			this.swallowExceptions = hideExceptions;
+
+			return this;
+		}
+
+		/// <summary>Control whether the displayable will throw exceptions when no displayable with a matching name is found.</summary>
+		/// <param name="isOptional">Optional is true by default.</param>
+		/// <returns>The same object.</returns>
+		public DisplayRenderer<T> Optional(bool isOptional = true)
+		{
+			this.isOptional = isOptional;
+
+			return this;
 		}
 
 		#region IHtmlString Members
@@ -45,9 +90,6 @@ namespace N2.Web.Mvc
 
 		public void Render()
 		{
-			if (Context.Displayable == null)
-				return;
-
 			WriteTo(Context.Html.ViewContext.Writer);
 		}
 
@@ -65,8 +107,23 @@ namespace N2.Web.Mvc
 			if (Context.Displayable == null || Context.Content == null)
 				return;
 
-			Context.Html.ResolveService<DisplayableRendererSelector>()
-				.Render(Context, writer);
+			Context.IsEditable = isEditable && ControlPanelExtensions.GetControlPanelState(Context.Html) == ControlPanelState.DragDrop;
+
+			var renderer = Context.Html.ResolveService<DisplayableRendererSelector>();
+			if (swallowExceptions)
+			{
+				try 
+				{
+					renderer.Render(Context, writer);		
+				}
+				catch (System.Exception ex)
+				{
+					logger.Error(ex);
+				}
+			}
+			else
+				renderer.Render(Context, writer);
 		}
+
 	}
 }

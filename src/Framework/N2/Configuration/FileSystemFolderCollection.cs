@@ -4,25 +4,8 @@ using System.Configuration;
 namespace N2.Configuration
 {
 	[ConfigurationCollection(typeof(FolderElement))]
-	public class FileSystemFolderCollection : ConfigurationElementCollection
+	public class FileSystemFolderCollection : LazyRemovableCollection<FolderElement>
     {
-        public FileSystemFolderCollection()
-        {
-            FolderElement folder = new FolderElement();
-            folder.Path = "~/upload/";
-            base.BaseAdd(folder);
-        }
-
-        protected override ConfigurationElement CreateNewElement()
-        {
-            return new FolderElement();
-        }
-
-        protected override object GetElementKey(ConfigurationElement element)
-        {
-            return ((FolderElement)element).Path;
-        }
-
 		public void Add(string folderPath)
 		{
 			BaseAdd(new FolderElement { Path = folderPath });
@@ -37,7 +20,7 @@ namespace N2.Configuration
     	{
     		get
     		{
-    			foreach(FolderElement element in this)
+    			foreach(FolderElement element in this.AllElements)
     			{
 					if (element.Path.EndsWith("/"))
 						yield return element.Path;

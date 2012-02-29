@@ -6,6 +6,13 @@ namespace N2.Web.Mvc.Html
 {
 	public static class DisplayExtensions
 	{
+        static DisplayExtensions()
+        {
+            DisplayableFactory = (html, propertyName, item) => new Displayable(html, propertyName, item);
+        }
+
+        public static Func<HtmlHelper, string, ContentItem, Displayable> DisplayableFactory { get; set; }
+
         public static Displayable DisplayContent(this HtmlHelper helper, string detailName)
 		{
 			return helper.DisplayContent(helper.CurrentItem(), detailName);
@@ -13,7 +20,7 @@ namespace N2.Web.Mvc.Html
 
 		public static Displayable DisplayContent(this HtmlHelper helper, ContentItem item, string detailName)
 		{
-			return new Displayable(helper, detailName, item);
+            return DisplayableFactory(helper, detailName, item);
 		}
 
 
@@ -42,8 +49,8 @@ namespace N2.Web.Mvc.Html
 
         public static void RenderDisplay(this HtmlHelper helper, ContentItem item, string detailName)
         {
-            new Displayable(helper, detailName, item)
-                .Render();
+            DisplayableFactory(helper, detailName, item)
+                .Render(helper.ViewContext.Writer);
         }
 
 
@@ -60,7 +67,7 @@ namespace N2.Web.Mvc.Html
             where TItem : ContentItem
         {
             var member = (MemberExpression)expression.Body;
-			helper.DisplayContent(item, member.Member.Name).Render();
+			helper.DisplayContent(item, member.Member.Name).Render(helper.ViewContext.Writer);
         }
 	}
 }

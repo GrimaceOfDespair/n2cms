@@ -10,9 +10,37 @@ using N2.Plugin;
 using N2.Security;
 using N2.Web.Mail;
 using NHibernate;
+using log4net;
 
 namespace N2.Web
 {
+	[Obsolete("Use IErrorNotifier")]
+	public interface IErrorHandler
+	{
+		void Notify(Exception ex);
+	}
+
+	[Obsolete("Use IErrorNotifier")]
+	[Service(typeof(IErrorHandler))]
+	public class ObsoleteErrorHandler : IErrorHandler
+	{
+		IErrorNotifier notifier;
+
+		public ObsoleteErrorHandler(IErrorNotifier notifier)
+		{
+			this.notifier = notifier;
+		}
+
+		#region IErrorHandler Members
+
+		public void Notify(Exception ex)
+		{
+			notifier.Notify(ex);
+		}
+
+		#endregion
+	}
+
 	[Service(typeof (IErrorNotifier))]
 	public class ErrorNotifier : IErrorNotifier
 	{
@@ -35,6 +63,7 @@ namespace N2.Web
 	[Service]
 	public class ErrorHandler : IAutoStart
 	{
+		private readonly ILog logger = LogManager.GetLogger(typeof (ErrorHandler));
 		private readonly IErrorNotifier notifier;
 		private readonly ErrorAction action = ErrorAction.None;
 		private readonly IWebContext context;
@@ -177,7 +206,7 @@ namespace N2.Web
 		private void RedirectToFix(WrongClassException wex)
 		{
 			string url = Url.Parse(fixClassUrl).ResolveTokens().AppendQuery("id", wex.Identifier);
-			Trace.WriteLine("Redirecting to '" + url + "' to fix exception: " + wex);
+			logger.Warn("Redirecting to '" + url + "' to fix exception: " + wex);
 			context.HttpContext.ClearError();
 			context.HttpContext.Response.Redirect(url);
 		}

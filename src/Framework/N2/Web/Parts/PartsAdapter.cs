@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Security.Principal;
 using System.Web.UI;
 using N2.Collections;
@@ -6,6 +8,8 @@ using N2.Definitions;
 using N2.Engine;
 using N2.Persistence;
 using N2.Web.UI;
+using N2.Security;
+using N2.Edit;
 
 namespace N2.Web.Parts
 {
@@ -20,6 +24,7 @@ namespace N2.Web.Parts
 		IPersister persister;
 		IDefinitionManager definitions;
 		ITemplateProvider[] templates;
+		ISecurityManager security;
 
 		public IPersister Persister
 		{
@@ -51,16 +56,40 @@ namespace N2.Web.Parts
 			set { templates = value; }
 		}
 
-		/// <summary>Retrieves content items added to a zone of the parnet item.</summary>
+		public ISecurityManager Security
+		{
+			get { return security ?? engine.Container.Resolve<ISecurityManager>(); }
+			set { security = value; }
+		}
+
+        /// <summary>Retrieves content items added to a zone of the parnet item.</summary>
 		/// <param name="parentItem">The item whose items to get.</param>
 		/// <param name="zoneName">The zone in which the items should be contained.</param>
 		/// <returns>A list of items in the zone.</returns>
-		public virtual ItemList GetItemsInZone(ContentItem parentItem, string zoneName)
+        [Obsolete("Use overload with interface parameter")]
+        public virtual ItemList GetItemsInZone(ContentItem parentItem, string zoneName)
+        {
+            return new ItemList(GetParts(parentItem, zoneName, Interfaces.Viewing));
+        }
+
+		/// <summary>Retrieves content items added to a zone of the parnet item.</summary>
+		/// <param name="belowParentItem">The item whose items to get.</param>
+		/// <param name="inZoneNamed">The zone in which the items should be contained.</param>
+        /// <param name="filteredForInterface">Interface where the parts are displayed.</param>
+		/// <returns>A list of items in the zone.</returns>
+		public virtual IEnumerable<ContentItem> GetParts(ContentItem belowParentItem, string inZoneNamed, string filteredForInterface)
 		{
-			if(parentItem == null)
+			if(belowParentItem == null)
 				return new ItemList();
 
-			return parentItem.GetChildren(zoneName);
+			var children = !belowParentItem.VersionOf.HasValue ? belowParentItem.Children : belowParentItem.VersionOf.Children;
+            var items = children.FindParts(inZoneNamed)
+                .Where(new AccessFilter(WebContext.User, Security));
+
+            if(filteredForInterface == Interfaces.Viewing)
+                items = items.Where(new PublishedFilter());
+
+            return items;
 		}
 
 		/// <summary>Retrieves allowed item definitions.</summary>
@@ -70,13 +99,8 @@ namespace N2.Web.Parts
 		/// <returns>Item definitions allowed by zone, parent restrictions and security.</returns>
 		public virtual IEnumerable<ItemDefinition> GetAllowedDefinitions(ContentItem parentItem, string zoneName, IPrincipal user)
 		{
-			foreach (var childDefinition in GetAllowedDefinitions(parentItem, user))
-			{
-				if (childDefinition.IsAllowedInZone(zoneName))
-				{
-					yield return childDefinition;
-				}
-			}
+			return Definitions.GetAllowedChildren(parentItem, zoneName)
+				.WhereAuthorized(Security, user, parentItem);
 		}
 
 		/// <summary>Retrieves allowed item definitions.</summary>
@@ -85,15 +109,9 @@ namespace N2.Web.Parts
 		/// <returns>Item definitions allowed by zone, parent restrictions and security.</returns>
 		public virtual IEnumerable<ItemDefinition> GetAllowedDefinitions(ContentItem parentItem, IPrincipal user)
 		{
-			ItemDefinition containerDefinition = Definitions.GetDefinition(parentItem);
-
-			foreach (ItemDefinition childDefinition in containerDefinition.GetAllowedChildren(Definitions, parentItem))
-			{
-				if (childDefinition.Enabled && childDefinition.IsAuthorized(user) && childDefinition.AllowedIn != N2.Integrity.AllowedZones.None)
-				{
-					yield return childDefinition;
-				}
-			}
+			return Definitions.GetAllowedChildren(parentItem)
+                .Where(d => d.Enabled && d.AllowedIn != Integrity.AllowedZones.None && d.Enabled)
+				.WhereAuthorized(Security, user, parentItem);
 		}
 
 		/// <summary>Adds a content item part to a containing control hierarchy (typically a zone control). Override this method to adapt how a parent gets it's children added.</summary>

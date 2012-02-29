@@ -4,11 +4,14 @@ using System.Web.UI.WebControls;
 using System.Web.Configuration;
 using System.Configuration;
 using N2.Web;
+using System.Text;
+using System.IO;
 
 namespace N2.Edit.Install.Begin
 {
 	public partial class Default : System.Web.UI.Page
 	{
+		protected bool installationAllowed = true;
 		protected bool needsPasswordChange = false;
 		protected bool autoLogin = false;
 		protected string continueUrl;
@@ -23,6 +26,7 @@ namespace N2.Edit.Install.Begin
 			action = Request["action"];
 			version = typeof(N2.ContentItem).Assembly.GetName().Version;
 			config = N2.Context.Current.Resolve<N2.Configuration.EditSection>().Installer;
+			installationAllowed = config.AllowInstallation;
 
 			continueUrl = action == "install"
 									? config.InstallUrl
@@ -35,7 +39,6 @@ namespace N2.Edit.Install.Begin
 			continueUrl = N2.Web.Url.ResolveTokens(continueUrl);
 
 			needsPasswordChange = FormsAuthentication.Authenticate("admin", "changeme");
-
 			autoLogin = Request["autologin"] == "true";
 			if (autoLogin)
 				return;
@@ -55,10 +58,27 @@ namespace N2.Edit.Install.Begin
 				System.Configuration.Configuration cfg;
 				if (TryOpenWebConfiguration(out cfg))
 				{
-					AuthenticationSection authentication = cfg.GetSection("system.web/authentication") as AuthenticationSection;
+					var authentication = (AuthenticationSection)cfg.GetSection("system.web/authentication");
 					if(chkLoginUrl.Checked)
 						authentication.Forms.LoginUrl = "N2/Login.aspx";
-					authentication.Forms.Credentials.Users["admin"].Password = txtPassword.Text;
+
+					authentication.Forms.Credentials.PasswordFormat = FormsAuthPasswordFormat.SHA1;
+					authentication.Forms.Credentials.Users["admin"].Password = ComputeSHA1Hash(txtPassword.Text);
+
+					var membership = (MembershipSection)cfg.GetSection("system.web/membership");
+					if (membership.Providers["ContentMembershipProvider"] != null)
+						membership.DefaultProvider = "ContentMembershipProvider";
+
+					var roleManager = (RoleManagerSection)cfg.GetSection("system.web/roleManager");
+					if (roleManager.Providers["ContentRoleProvider"] != null)
+					{
+						roleManager.Enabled = true;
+						roleManager.DefaultProvider = "ContentRoleProvider";
+					}
+
+					var profile = (ProfileSection)cfg.GetSection("system.web/profile");
+					if (profile.Providers["ContentProfileProvider"] != null)
+						profile.DefaultProvider = "ContentProfileProvider";
 
 					cfg.Save();
 
@@ -79,6 +99,17 @@ namespace N2.Edit.Install.Begin
 				cvSave.ToolTip = ex.ToString();
 			}
 			needsPasswordChange = false;
+		}
+
+		public string ComputeSHA1Hash(string input)
+		{
+			var encrypter = new System.Security.Cryptography.SHA1CryptoServiceProvider();
+			using (var sw = new StringWriter())
+			{
+				foreach (byte b in encrypter.ComputeHash(Encoding.UTF8.GetBytes(input)))
+					sw.Write(b.ToString("x2"));
+				return sw.ToString();
+			}
 		}
 
 		private static bool TryOpenWebConfiguration(out System.Configuration.Configuration configuration)

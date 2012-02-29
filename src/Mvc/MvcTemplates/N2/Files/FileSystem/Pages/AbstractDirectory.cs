@@ -1,17 +1,35 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Web;
 using N2.Collections;
 using N2.Web.Drawing;
+using N2.Definitions;
+using N2.Configuration;
+using N2.Engine;
 
 namespace N2.Edit.FileSystem.Items
 {
-    public abstract class AbstractDirectory : AbstractNode
+	[Service]
+	public class ImageSizeCache
+	{
+		public HashSet<string> ImageSizes { get; private set; }
+
+		public ImageSizeCache(ConfigurationManagerWrapper config)
+		{
+			ImageSizes = new HashSet<string>(config.Sections.Management.Images.Sizes.AllElements.Select(ise => ise.Name));
+		}
+	}
+
+    public abstract class AbstractDirectory : AbstractNode, IFileSystemDirectory
     {
 		public override ContentItem GetChild(string childName)
 		{
+            if (string.IsNullOrEmpty(childName))
+                return this;
+
 			string name = HttpUtility.UrlDecode(childName.Trim('/'));
 			foreach (var file in GetFiles())
 			{
@@ -40,13 +58,19 @@ namespace N2.Edit.FileSystem.Items
 				{
 					var file = new File(fd, this);
 					file.Set(FileSystem);
+					file.Set(ImageSizes);
 
 					if (lastFile != null
 						&& file.Name.StartsWith(lastFileName + ImagesUtility.Separator)
 						&& file.Name.EndsWith(lastFileExtension))
 					{
-						int lastFileNameLength = (lastFileName + ImagesUtility.Separator).Length;
-						if (file.Name.Substring(lastFileNameLength, file.Name.Length - lastFileNameLength - lastFileExtension.Length) == "icon")
+						if (!ImageSizes.ImageSizes.Contains(GetSizeName(lastFileName, lastFileExtension, file)))
+						{
+							files.Add(file);
+							continue;
+						}
+
+						if (GetSizeName(lastFileName, lastFileExtension, file) == "icon")
 							file.IsIcon = true;
 						lastFile.Add(file);
 					}
@@ -73,6 +97,13 @@ namespace N2.Edit.FileSystem.Items
             }
 		}
 
+		private static string GetSizeName(string lastFileName, string lastFileExtension, File file)
+		{
+			int lastFileNameLength = (lastFileName + ImagesUtility.Separator).Length;
+			string size = file.Name.Substring(lastFileNameLength, file.Name.Length - lastFileNameLength - lastFileExtension.Length);
+			return size;
+		}
+
 		public virtual IList<Directory> GetDirectories()
         {
             try
@@ -80,8 +111,7 @@ namespace N2.Edit.FileSystem.Items
 				List<Directory> directories = new List<Directory>();
 				foreach(DirectoryData dir in FileSystem.GetDirectories(Url))
 				{
-					var node = new Directory(dir, this);
-					node.Set(FileSystem);
+					var node = Items.Directory.New(dir, this, DependencyInjector);
 					directories.Add(node);
 				}
 				directories.Sort(new TitleComparer<Directory>());
@@ -122,5 +152,5 @@ namespace N2.Edit.FileSystem.Items
         	
 			throw new N2Exception(item + " is not a Directory.");
         }
-    }
+	}
 }

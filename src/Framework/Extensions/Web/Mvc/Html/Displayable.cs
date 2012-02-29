@@ -7,14 +7,19 @@ using System.Web.Routing;
 using N2.Definitions.Static;
 using N2.Web.Rendering;
 using N2.Web.UI;
+using N2.Web.UI.WebControls;
+using log4net;
 
 namespace N2.Web.Mvc.Html
 {
 	public class Displayable : ItemHelper
 	{
+        private readonly ILog logger = LogManager.GetLogger(typeof(Displayable));
 		readonly string propertyName;
 		string path;
-		bool swallowExceptions;
+		bool swallowExceptions = RenderHelper.DefaultSwallowExceptions;
+		bool isOptional = RenderHelper.DefaultOptional;
+		bool isEditable = RenderHelper.DefaultEditable;
 
         public Displayable(HtmlHelper helper, string propertyName, ContentItem currentItem)
             : base(helper, currentItem)
@@ -58,6 +63,13 @@ namespace N2.Web.Mvc.Html
 			return this;
 		}
 
+		public Displayable Editable(bool isEditable)
+		{
+			this.isEditable = isEditable;
+
+			return this;
+		}
+
 		public Displayable SwallowExceptions()
 		{
 			swallowExceptions = true;
@@ -72,6 +84,16 @@ namespace N2.Web.Mvc.Html
 			return this;
 		}
 
+		/// <summary>Control whether the displayable will throw exceptions when no displayable with a matching name is found.</summary>
+		/// <param name="isOptional">Optional is true by default.</param>
+		/// <returns>The same <see cref="Displayable"/> object.</returns>
+		public Displayable Optional(bool isOptional = true)
+		{
+			this.isOptional = isOptional;
+
+			return this;
+		}
+
 		public override string ToString()
 		{
 			var previousWriter = Html.ViewContext.Writer;
@@ -81,7 +103,7 @@ namespace N2.Web.Mvc.Html
 				{
 					Html.ViewContext.Writer = writer;
 					
-					Render();
+					Render(writer);
 
 					return writer.ToString();
 				}
@@ -92,7 +114,12 @@ namespace N2.Web.Mvc.Html
 			}
 		}
 
-        internal void Render()
+        public string ToHtmlString()
+        {
+            return ToString();
+        }
+
+        internal void Render(TextWriter writer)
         {
             if (!string.IsNullOrEmpty(path))
                 CurrentItem = ItemUtility.WalkPath(CurrentItem, path);
@@ -104,33 +131,40 @@ namespace N2.Web.Mvc.Html
 			{
 				try
 				{
-					RenderDisplayable();
+					RenderDisplayable(writer);
 				}
 				catch (Exception ex)
 				{
-					Debug.WriteLine(ex);
+					logger.Debug(ex);
 				}
 			}
 			else
-				RenderDisplayable();
+				RenderDisplayable(writer);
         }
 
-		private void RenderDisplayable()
+		private void RenderDisplayable(TextWriter writer)
 		{
 			var displayable = DefinitionMap.Instance.GetOrCreateDefinition(CurrentItem).Displayables.FirstOrDefault(d => d.Name == propertyName);
 
 			if (displayable == null)
 			{
-				if (!swallowExceptions)
-					throw new N2Exception("No attribute implementing IDisplayable found on the property '{0}' of the item #{1} of type {2}", propertyName, CurrentItem.ID, CurrentItem.GetContentType());
-				return;
+				if (isOptional || swallowExceptions)
+					return;
+
+				throw new N2Exception("No attribute implementing IDisplayable found on the property '{0}' of the item #{1} of type {2}", propertyName, CurrentItem.ID, CurrentItem.GetContentType());
 			}
 
-			var writer = Html.ViewContext.Writer;
 			if (Wrapper != null)
 				writer.Write(Wrapper.ToString(TagRenderMode.StartTag));
 
-			var ctx = new RenderingContext { Content = CurrentItem, Displayable = displayable, Html = Html, PropertyName = propertyName };
+			var ctx = new RenderingContext
+			{ 
+				Content = CurrentItem, 
+				Displayable = displayable, 
+				Html = Html, 
+				PropertyName = propertyName, 
+				IsEditable = isEditable && ControlPanelExtensions.GetControlPanelState(Html) == ControlPanelState.DragDrop 
+			};
 			Html.ResolveService<DisplayableRendererSelector>()
 				.Render(ctx, writer);
 

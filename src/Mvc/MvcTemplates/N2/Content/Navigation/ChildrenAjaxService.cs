@@ -6,6 +6,7 @@ using N2.Edit;
 using N2.Edit.FileSystem.Items;
 using N2.Engine;
 using N2.Web;
+using N2.Edit.Workflow;
 
 namespace N2.Management.Content.Navigation
 {
@@ -13,13 +14,15 @@ namespace N2.Management.Content.Navigation
 	public class ChildrenAjaxService : IAjaxService
 	{
 		private readonly Navigator navigator;
-		private readonly VirtualNodeFactory nodes;
+		private readonly VirtualNodeFactory virtualNodes;
+		private readonly IContentAdapterProvider adapters;
 		private readonly IUrlParser urls;
 
-		public ChildrenAjaxService(Navigator navigator, VirtualNodeFactory nodes, IUrlParser urls)
+		public ChildrenAjaxService(Navigator navigator, VirtualNodeFactory virtualNodes, IContentAdapterProvider adapters, IUrlParser urls)
 		{
 			this.navigator = navigator;
-			this.nodes = nodes;
+			this.virtualNodes = virtualNodes;
+			this.adapters = adapters;
 			this.urls = urls;
 		}
 
@@ -44,13 +47,24 @@ namespace N2.Management.Content.Navigation
 		public void Handle(HttpContextBase context)
 		{
 			string path = context.Request["path"];
-			var filter = CreateFilter(context.Request["filter"]);
+			var filter = CreateFilter(context.Request["filter"], context.Request["selectableTypes"], context.Request["selectableExtensions"]);
 			var parent = navigator.Navigate(urls.StartPage, path);
-			var childItems = filter.Pipe(parent.GetChildren().Union(nodes.GetChildren(path)));
+
+			var childItems = parent != null
+				? adapters.ResolveAdapter<NodeAdapter>(parent).GetChildren(parent, Interfaces.Managing).Where(filter)
+				: Enumerable.Empty<ContentItem>();
+			childItems = childItems.Union(virtualNodes.GetChildren(path)).ToList();
+
 			var children = childItems.Select(c => ToJson(c)).ToArray();
 
 			context.Response.ContentType = "application/json";
 			context.Response.Write("{\"path\":\"" + Encode(parent.Path) + "\", \"children\":[" + string.Join(", ", children) + "]}");
+		}
+
+		private ItemFilter CreateFilter(string filterText, string selectableTypes, string selectableExtensions)
+		{
+			return CreateFilter(filterText)
+				& new DelegateFilter(ci => TreeUtility.IsSelectable(ci, selectableTypes, selectableExtensions) || ci.GetChildren().Any());
 		}
 
 		private ItemFilter CreateFilter(string filter)

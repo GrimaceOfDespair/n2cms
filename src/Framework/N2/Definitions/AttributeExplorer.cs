@@ -69,7 +69,9 @@ namespace N2.Definitions
 					
 					if (editableOnProperty is ISecurable)
 					{
+#pragma warning disable 618
 						foreach (DetailAuthorizedRolesAttribute rolesAttribute in propertyOnItem.GetCustomAttributes(typeof (DetailAuthorizedRolesAttribute), false))
+#pragma warning restore 618
 						{
 							ISecurable s = editableOnProperty as ISecurable;
 							s.AuthorizedRoles = rolesAttribute.Roles;
@@ -91,7 +93,7 @@ namespace N2.Definitions
 				foreach (T editableOnClass in t.GetCustomAttributes(typeof (T), true))
 				{
 					if (editableOnClass.Name == null)
-						throw new N2Exception("The attribute {0} does not have a Name defined. Since it's defined on the class instead of a property it must have a name.", editableOnClass);
+						continue;
 
 					if (attributes.Contains(editableOnClass))
 						continue;

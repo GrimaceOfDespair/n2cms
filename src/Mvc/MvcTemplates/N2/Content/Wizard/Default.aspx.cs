@@ -6,7 +6,7 @@ using N2.Edit.Wizard.Items;
 
 namespace N2.Edit.Wizard
 {
-	[ToolbarPlugin("WIZARD", "wizard", "{ManagementUrl}/Content/Wizard/Default.aspx?selected={selected}", ToolbarArea.Preview, Targets.Preview, "{ManagementUrl}/Resources/icons/wand.png", 55, 
+	[ToolbarPlugin("WIZARD", "wizard", "{ManagementUrl}/Content/Wizard/Default.aspx?{Selection.SelectedQueryKey}={selected}", ToolbarArea.Preview, Targets.Preview, "{ManagementUrl}/Resources/icons/wand.png", 55, 
         ToolTip = "create items in default locations", 
         GlobalResourceClassName = "Toolbar",
 		OptionProvider = typeof(WizardOptionProvider))]
@@ -40,7 +40,8 @@ namespace N2.Edit.Wizard
 		{
 			lblLocationTitle.DataBind();
 			txtTitle.Text = Selection.SelectedItem.Title;
-			ddlTypes.DataSource = Definitions.GetAllowedChildren(Selection.SelectedItem, "", User)
+			ddlTypes.DataSource = Definitions.GetAllowedChildren(Selection.SelectedItem, null)
+				.WhereAuthorized(Engine.SecurityManager, User, Selection.SelectedItem)
 				.SelectMany(d =>
 					{
 						return new [] { new 

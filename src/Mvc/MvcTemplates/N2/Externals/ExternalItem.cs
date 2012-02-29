@@ -1,13 +1,18 @@
 ﻿using N2.Definitions;
 using N2.Web;
+using N2.Installation;
+using N2.Integrity;
 
 namespace N2.Management.Externals
 {
-	[Definition(IconUrl = "{ManagementUrl}/Resources/icons/shape_square.png")]
+	[Definition(
+		IconUrl = "{ManagementUrl}/Resources/icons/shape_square.png", 
+		Installer = InstallerHint.NeverRootOrStartPage,
+		AuthorizedRoles = new string[0])]
 	[Template(ExternalItem.ContainerTemplateKey, "{ManagementUrl}/Externals/External.ascx")]
 	[Versionable(AllowVersions.No)]
 	[Throwable(AllowInTrash.No)]
-	[ItemAuthorizedRoles(Roles = new string[0])]
+	[AllowedChildren(typeof(ContentItem))]
 	public class ExternalItem : ContentItem, ISystemNode
 	{
 		public const string ContainerTemplateKey = "container";

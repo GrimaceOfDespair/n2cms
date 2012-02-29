@@ -62,19 +62,21 @@ namespace N2.Extensions.Tests.Mvc
 				.ToArray();
 
 			var changer = new StateChanger();
-			var definitions = new DefinitionManager(new[] { new DefinitionProvider(new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], new EngineSection())) }, new ITemplateProvider[0], new ContentActivator(changer, null, new EmptyProxyFactory()), changer);
+			var definitions = new DefinitionManager(new[] { new DefinitionProvider(new DefinitionBuilder(new DefinitionMap(), typeFinder, new TransformerBase<IUniquelyNamed>[0], TestSupport.SetupEngineSection())) }, new ITemplateProvider[0], new ContentActivator(changer, null, new EmptyProxyFactory()), changer);
 			httpContext = new FakeHttpContext();
 			var webContext = new FakeWebContextWrapper(httpContext);
 			var host = new Host(webContext, root.ID, root.ID);
 			var parser = TestSupport.Setup(persister, webContext, host);
 			controllerMapper = new ControllerMapper(typeFinder, definitions);
 			Url.DefaultExtension = "";
+			N2.Web.Url.ApplicationPath = "/";
 
 			engine = mocks.DynamicMock<IEngine>();
 			SetupResult.For(engine.Resolve<ITypeFinder>()).Return(typeFinder);
 			SetupResult.For(engine.Definitions).Return(definitions);
 			SetupResult.For(engine.UrlParser).Return(parser);
 			SetupResult.For(engine.Persister).Return(persister);
+			SetupResult.For(engine.Resolve<RequestPathProvider>()).Return(new RequestPathProvider(webContext, parser, new ErrorNotifier(), new HostSection()));
 			var editUrlManager = new FakeEditUrlManager();
 			SetupResult.For(engine.ManagementPaths).Return(editUrlManager);
 			engine.Replay();
@@ -89,7 +91,7 @@ namespace N2.Extensions.Tests.Mvc
 		#region RequestingUrl
 		protected RouteData RequestingUrl(Url url)
 		{
-			httpContext.request.appRelativeCurrentExecutionFilePath = "~" + url.Path;
+			httpContext.request.appRelativeCurrentExecutionFilePath = Url.ToRelative(url.Path);
 			httpContext.request.rawUrl = url;
 
 			NameValueCollection nvc = new NameValueCollection();

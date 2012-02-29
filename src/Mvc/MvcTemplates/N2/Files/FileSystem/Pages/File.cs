@@ -5,6 +5,8 @@ using N2.Engine;
 using N2.Installation;
 using N2.Integrity;
 using N2.Persistence;
+using N2.Definitions;
+using N2.Web.Drawing;
 
 namespace N2.Edit.FileSystem.Items
 {
@@ -15,14 +17,11 @@ namespace N2.Edit.FileSystem.Items
     [RestrictParents(typeof(AbstractDirectory))]
     [Editables.EditableUpload]
 	[N2.Web.Template("info", "{ManagementUrl}/Files/FileSystem/File.aspx")]
-    public class File : AbstractNode, IActiveContent, IInjectable<IEditUrlManager>
+    public class File : AbstractNode, IActiveContent, IFileSystemFile
     {
-		IEditUrlManager managementPaths;
-
-		protected IEditUrlManager ManagementPaths
-		{
-			get { return managementPaths ?? Context.Current.ManagementPaths; }
-		}
+		public long Size { get; set; }
+		public bool IsIcon { get; set; }
+		private string iconUrl;
 
 		public File()
 		{
@@ -41,9 +40,6 @@ namespace N2.Edit.FileSystem.Items
 
 			url = file.VirtualPath;
 		}
-
-		public long Size { get; set; }
-		public bool IsIcon { get; set; }
 
         public override void AddTo(ContentItem newParent)
         {
@@ -66,69 +62,17 @@ namespace N2.Edit.FileSystem.Items
 		{
 			get
 			{
-				if(iconUrl != null)
-					return base.IconUrl;
+				if (iconUrl != null)
+					return iconUrl;
 
-				string extension = VirtualPathUtility.GetExtension(Name).ToLower();
-				switch (extension)
-				{
-					case ".gif":
-					case ".png":
-					case ".jpg":
-					case ".jpeg":
-						return IconPath("page_white_picture");
-					case ".pdf":
-						return IconPath("page_white_acrobat");
-					case ".cs":
-					case ".vb":
-					case ".js":
-						return IconPath("page_white_csharp");
-					case ".html":
-					case ".htm":
-					case ".xml":
-					case ".xsd":
-					case ".xslt":
-					case ".aspx":
-					case ".ascx":
-					case ".ashx":
-					case ".php":
-						return IconPath("page_white_code");
-					case ".zip":
-					case ".gz":
-					case ".7z":
-					case ".rar":
-						return IconPath("page_white_compressed");
-					case ".swf":
-						return IconPath("page_white_flash");
-					case ".txt":
-						return IconPath("page_white_text");
-					case ".xls":
-					case ".xlsx":
-						return IconPath("page_white_excel");
-					case ".xps":
-					case ".ppt":
-					case ".pptx":
-						return IconPath("page_white_powerpoint");
-					case ".doc":
-					case ".docx":
-						return IconPath("page_white_word");
-					case ".mpg":
-					case ".mpeg":
-					case ".avi":
-					case ".wmv":
-					case ".flv":
-					case ".mp4":
-					case ".mov":
-						return IconPath("page_white_dvd");
-					default:
-						return IconPath("page_white");
-				}
+				string icon = ImagesUtility.GetResizedPath(Url, "icon");
+				if (FileSystem.FileExists(icon))
+					this.iconUrl = icon;
+				else
+					this.iconUrl = ImagesUtility.GetIconUrl(Url);
+
+				return iconUrl;
 			}
-		}
-
-		private string IconPath(string iconName)
-		{
-			return ManagementPaths.ResolveResourceUrl(string.Format("{{ManagementUrl}}/Resources/icons/{0}.png", iconName));
 		}
 
 		public bool Exists
@@ -153,6 +97,7 @@ namespace N2.Edit.FileSystem.Items
 
 		internal void Add(File file)
 		{
+			file.Parent = this;
 			Children.Add(file);
 		}
 
@@ -223,14 +168,5 @@ namespace N2.Edit.FileSystem.Items
 		{
 			this.url = null;
 		}
-
-		#region IDependentEntity<IEditUrlManager> Members
-
-		public void Set(IEditUrlManager dependency)
-		{
-			managementPaths = dependency;
-		}
-
-		#endregion
 	}
 }

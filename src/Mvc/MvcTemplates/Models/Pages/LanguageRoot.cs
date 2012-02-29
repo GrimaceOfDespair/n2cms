@@ -9,6 +9,7 @@ using N2.Web.UI;
 using N2.Integrity;
 using N2.Definitions;
 using N2.Security;
+using N2.Web.Parts;
 
 namespace N2.Templates.Mvc.Models.Pages
 {
@@ -19,8 +20,9 @@ namespace N2.Templates.Mvc.Models.Pages
 	[RecursiveContainer(LanguageRoot.SiteArea, 70, 
 		RequiredPermission = Permission.Administer)]
 	[RestrictParents(typeof (StartPage))]
-	[FieldSetContainer(StartPage.MiscArea, "Miscellaneous", 80, ContainerName = LanguageRoot.SiteArea)]
-	[FieldSetContainer(StartPage.LayoutArea, "Layout", 75, ContainerName = LanguageRoot.SiteArea)]
+	[TabContainer(StartPage.LayoutArea, "Layout", 75, ContainerName = LanguageRoot.SiteArea)]
+	[TabContainer(StartPage.MiscArea, "Miscellaneous", 80, ContainerName = LanguageRoot.SiteArea)]
+	[TabContainer("top", "Top", 100, ContainerName = LanguageRoot.SiteArea)]
 	public class LanguageRoot : ContentPageBase, IStructuralPage, ILanguage, IStartPage
 	{
 		public LanguageRoot()
@@ -66,14 +68,14 @@ namespace N2.Templates.Mvc.Models.Pages
 
 		#endregion
 
-		[FileAttachment, EditableFileUploadAttribute("Top Image", 88, ContainerName = Tabs.Content, CssClass = "top")]
+		[FileAttachment, EditableImageUpload("Top Image", 88, ContainerName = Tabs.Content, CssClass = "top")]
 		public virtual string TopImage
 		{
 			get { return GetDetail("TopImage", string.Empty); }
 			set { SetDetail("TopImage", value, string.Empty); }
 		}
 
-		[FileAttachment, EditableFileUploadAttribute("Content Image", 90, ContainerName = Tabs.Content, CssClass = "main")]
+		[FileAttachment, EditableImageUpload("Content Image", 90, ContainerName = Tabs.Content, CssClass = "main")]
 		public virtual string Image
 		{
 			get { return GetDetail("Image", string.Empty); }
@@ -87,11 +89,11 @@ namespace N2.Templates.Mvc.Models.Pages
 			set { SetDetail("FooterText", value, string.Empty); }
 		}
 
-		[EditableItem("Header", 100, ContainerName = SiteArea)]
+		[EditableItem("Header", 100, ContainerName = "Top")]
 		public virtual Top Header
 		{
-			get { return (Top)Children["Header"]; }
-			set { Children["Header"] = value; }
+			get { return this.LoadEmbeddedPart<Top>("Header"); }
+			set { this.StoreEmbeddedPart("Header", value); }
 		}
 	}
 }

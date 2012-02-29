@@ -22,7 +22,7 @@ namespace N2.Tests.Edit.FileSystem
 			host = new Host(new Fakes.FakeWebContextWrapper(), 1, 1);
 			config = new EditSection();
 			config.DefaultDirectory = new DefaultDirectoryElement();
-			config.UploadFolders = new FileSystemFolderCollection();
+			config.UploadFolders = new RootFileSystemFolderCollection();
 
 			root = CreateOneItem<Items.NormalPage>(1, "root", null);
 			item1 = CreateOneItem<Items.NormalPage>(2, "item1", root);
@@ -49,15 +49,29 @@ namespace N2.Tests.Edit.FileSystem
 		[TestCase(DefaultDirectoryMode.NodeName, "~/DefaultFolder/item2/")]
 		[TestCase(DefaultDirectoryMode.UploadFolder, "~/DefaultFolder/")]
 		[TestCase(DefaultDirectoryMode.RecursiveNamesFromParent, "~/DefaultFolder/item1/")]
-		public void CanFind_ShadowFolder_WithDefaultFolderRoot(DefaultDirectoryMode stragegy, string expectedPath)
+		public void CanFind_ShadowFolder_WithDefaultFolderRoot(DefaultDirectoryMode strategy, string expectedPath)
 		{
-			config.DefaultDirectory.Mode = stragegy;
+			config.DefaultDirectory.Mode = strategy;
 			config.DefaultDirectory.RootPath = "~/DefaultFolder/";
 			DefaultDirectorySelector finder = new DefaultDirectorySelector(host, config);
 
 			string path = finder.GetDefaultDirectory(item2);
 
-			Assert.That(path, Is.EqualTo(expectedPath), "Strategy " + stragegy);
+			Assert.That(path, Is.EqualTo(expectedPath), "Strategy " + strategy);
+		}
+
+		[Test]
+		public void CanFind_ShadowFolder_WhenUploading_NewFile()
+		{
+			config.DefaultDirectory.Mode = DefaultDirectoryMode.RecursiveNamesFromParent;
+			config.DefaultDirectory.RootPath = "~/DefaultFolder/";
+			DefaultDirectorySelector finder = new DefaultDirectorySelector(host, config);
+
+			var item3 = CreateOneItem<Items.NormalPage>(4, "item3", null);
+			item3.VersionOf = item2;
+			string path = finder.GetDefaultDirectory(item3);
+
+			Assert.That(path, Is.EqualTo("~/DefaultFolder/item1/"), "Strategy ~/DefaultFolder/item1/");
 		}
 	}
 }

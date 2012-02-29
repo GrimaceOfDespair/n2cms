@@ -1,1 +1,0 @@
-﻿This is some code that should be in the N2 framework but has been placed here due to .NET 4 dependency.

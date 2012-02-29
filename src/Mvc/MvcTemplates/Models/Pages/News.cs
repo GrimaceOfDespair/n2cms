@@ -5,6 +5,8 @@ using N2.Integrity;
 using N2.Templates.Mvc.Services;
 using N2.Web.Mvc;
 using N2.Persistence;
+using System.Collections.Generic;
+using System;
 
 namespace N2.Templates.Mvc.Models.Pages
 {
@@ -19,19 +21,14 @@ namespace N2.Templates.Mvc.Models.Pages
 			Syndicate = true;
 		}
 
-		[EditableText("Introduction", 90, ContainerName = Tabs.Content, TextMode = TextBoxMode.MultiLine, Rows = 4, Columns = 80)]
-		public virtual string Introduction
-		{
-			get { return (string) (GetDetail("Introduction") ?? string.Empty); }
-			set { SetDetail("Introduction", value, string.Empty); }
-		}
-
-		string ISyndicatable.Summary
-		{
-			get { return Introduction; }
-		}
+		[Obsolete("Use Summary")]
+		[DisplayableLiteral]
+		public virtual string Introduction { get { return Summary; } }
 
 		[Persistable(PersistAs = PropertyPersistenceLocation.Detail)]
 		public virtual bool Syndicate { get; set; }
+
+		[EditableTags(SortOrder = 200)]
+		public virtual IEnumerable<string> Tags { get; set; }
 	}
 }

@@ -12,25 +12,23 @@
 </asp:Content>
 
 <asp:Content ID="cc" ContentPlaceHolderID="Content" runat="server">
-	<div id="splitter" class="content">
-		<div id="leftPane" class="pane">
-			<iframe id="navigationFrame" src="<%= GetNavigationUrl(Selection.SelectedItem) %>" frameborder="0" name="navigation" class="frame"></iframe>
-		</div>
-		<div id="rightPane" class="pane">
-			<iframe id="previewFrame" src="<%= GetPreviewUrl(Selection.SelectedItem) %>" frameborder="0" name="preview" class="frame"></iframe>
-		</div>
+	<div id="leftPane" class="ui-layout-pane ui-layout-west">
+		<iframe id="navigationFrame" src="<%= GetNavigationUrl(Selection.SelectedItem) %>" frameborder="0" name="navigation" class="frame"></iframe>
+	</div>
+
+	<div id="rightPane" class="ui-layout-pane ui-layout-center">
+		<iframe id="previewFrame" src="<%= GetPreviewUrl(Selection.SelectedItem) %>" frameborder="0" name="preview" class="frame"></iframe>
 	</div>
 
 	<script type="text/javascript">
 		window.name = "top";
 		n2ctx.hasTop = function() { return true; }
-		n2ctx.initToolbar();
-		n2ctx.update({ path: '<%= SelectedPath %>', previewUrl: '<%= ResolveClientUrl(SelectedUrl) %>' });
 		n2ctx.location = "content";
 
-		window.n2.frameManager.init();
-		jQuery(document).ready(function() {
-		    jQuery(".command").n2glow();
+		jQuery(document).ready(function () {
+			n2ctx.initToolbar();
+			n2ctx.update({ path: '<%= SelectedPath %>', previewUrl: '<%= ResolveClientUrl(SelectedUrl) %>' });
+			n2.layout.init();
 		});
     </script>
 </asp:Content>

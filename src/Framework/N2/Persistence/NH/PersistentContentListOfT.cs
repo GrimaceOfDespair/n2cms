@@ -29,7 +29,8 @@ namespace N2.Persistence.NH
 				if (this.WasInitialized)
 					return base.Count;
 
-				return Convert.ToInt32(((ISession)Session).CreateFilter(this, "select count(*)").UniqueResult());
+                return Convert.ToInt32(((ISession)Session).CreateFilter(this, "select count(*)")
+                    .SetCacheable(true).UniqueResult());
 			}
 		}
 
@@ -106,27 +107,44 @@ namespace N2.Persistence.NH
 		{
 			if (WasInitialized) return List.FirstOrDefault(i => string.Equals(i.Name, name, StringComparison.InvariantCultureIgnoreCase));
 
-			return ((ISession)Session).CreateFilter(this, "where Name like :name").SetParameter("name", name).UniqueResult<T>();
+            return ((ISession)Session).CreateFilter(this, "where Name like :name")
+				.SetParameter("name", name)
+                .SetCacheable(true)
+				.SetMaxResults(1)
+				.List<T>()
+				.FirstOrDefault();
 		}
 
 		#endregion
 
 		#region IPageableList<T> Members
 
-		public virtual IList<T> FindRange(int skip, int take)
+		public virtual IQueryable<T> FindRange(int skip, int take)
 		{
 			if (this.WasInitialized)
 				return this.Skip(skip)
 					.Take(take)
-					.ToList();
+					.AsQueryable();
 
-			IQuery pagedList = ((ISession)Session)
+			//return Query().Skip(skip).Take(take);
+			return ((ISession)Session)
 				.CreateFilter(this, "")
 				.SetFirstResult(skip)
 				.SetMaxResults(take)
-				.SetCacheable(true);
+				.SetCacheable(true)
+				.List<T>().AsQueryable();
+		}
 
-			return pagedList.List<T>();
+		#endregion
+
+		#region IQueryableList<T> Members
+
+		public virtual IQueryable<T> Query()
+		{
+			if (WasInitialized)
+				return this.AsQueryable<T>();
+
+			throw new NotSupportedException("Cannot query since we don't know the parent relation in this case.");
 		}
 
 		#endregion

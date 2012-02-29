@@ -1,35 +1,36 @@
 using System.Diagnostics;
 using N2.Engine;
+using N2.Linq;
 using N2.Persistence.Proxying;
 using NHibernate;
 using NHibernate.Type;
+using log4net;
 
 namespace N2.Persistence.NH
 {
 	/// <summary>
 	/// This class is used to notify subscribers about loaded items.
 	/// </summary>
-	[Service(typeof(IInterceptor))]
 	public class NHInterceptor : EmptyInterceptor
 	{
 		private readonly IProxyFactory interceptor;
-		private readonly ISessionFactory sessionFactory;
+		public ISession Session { get; set; }
 		private readonly IItemNotifier notifier;
+		private readonly ILog logger = LogManager.GetLogger(typeof(NHInterceptor));
 
-		public NHInterceptor(IProxyFactory interceptor, IConfigurationBuilder builder, IItemNotifier notifier)
+		public NHInterceptor(IProxyFactory interceptor, IItemNotifier notifier)
 		{
 			this.interceptor = interceptor;
-			this.sessionFactory = builder.BuildSessionFactory();
 			this.notifier = notifier;
 		}
 
 		public override object Instantiate(string clazz, EntityMode entityMode, object id)
 		{
-		    Debug.WriteLine("Instantiate: " + clazz + " " + entityMode + " " + id);
+			logger.Debug("Instantiate: " + clazz + " " + entityMode + " " + id);
 		    object instance = interceptor.Create(clazz, id);
 		    if (instance != null)
 		    {
-		        sessionFactory.GetClassMetadata(clazz).SetIdentifier(instance, id, entityMode);
+		        Session.SessionFactory.GetClassMetadata(clazz).SetIdentifier(instance, id, entityMode);
 		    }
 		    return instance;
 		}
@@ -61,7 +62,7 @@ namespace N2.Persistence.NH
 			bool wasAltered = interceptor.OnSaving(entity);
 			if (wasHandled || wasAltered)
 			{
-				Debug.WriteLine("OnFlushDirty: " + entity + " " + id);
+				logger.Debug("OnFlushDirty: " + entity + " " + id);
 				return true;
 			}
 			return false;
@@ -85,7 +86,7 @@ namespace N2.Persistence.NH
 			bool wasAltered = interceptor.OnSaving(entity);
 			if (wasHandled || wasAltered)
 			{
-				Debug.WriteLine("OnSave: " + entity + " " + id);
+				logger.Debug("OnSave: " + entity + " " + id);
 				return true;
 			}
 			return false;
@@ -129,7 +130,7 @@ namespace N2.Persistence.NH
 		{
 			if (newlyCreatedItem == null)
 				return false;
-			
+
 			return notifier.NotifiyCreated(newlyCreatedItem); 
 		}
 

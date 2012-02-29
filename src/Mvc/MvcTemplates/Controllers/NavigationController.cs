@@ -6,6 +6,7 @@ using N2.Collections;
 using N2.Engine.Globalization;
 using N2.Templates.Mvc.Models;
 using N2.Templates.Mvc.Models.Pages;
+using N2.Edit;
 
 namespace N2.Templates.Mvc.Controllers
 {
@@ -13,9 +14,9 @@ namespace N2.Templates.Mvc.Controllers
 	{
 		private readonly ILanguageGateway _languageGateway;
 
-		public NavigationController(ILanguageGateway languageGateway)
+		public NavigationController(LanguageGatewaySelector languageGatewaySelector)
 		{
-			_languageGateway = languageGateway;
+			_languageGateway = languageGatewaySelector.GetLanguageGateway();
 		}
 
 		public PartialViewResult TopMenu()
@@ -23,7 +24,9 @@ namespace N2.Templates.Mvc.Controllers
             // Top menu for the current language starts at the nearest language root
             ContentItem branchRoot = Find.ClosestLanguageRoot;
 			var selected = Find.AncestorAtLevel(2, Find.EnumerateParents(CurrentPage, branchRoot, true), CurrentPage);
-			var topLevelPages = branchRoot.GetChildren(new NavigationFilter());
+			var pages = branchRoot.GetChildren(new NavigationFilter());
+			pages.Insert(0, branchRoot);
+			var topLevelPages = pages.TryAppendCreatorNode(Engine, branchRoot);
 			var model = new TopMenuModel(GetTranslations(), selected ?? branchRoot, topLevelPages);
 
 			return PartialView(model);
@@ -31,7 +34,7 @@ namespace N2.Templates.Mvc.Controllers
 
 		private IEnumerable<Translation> GetTranslations()
 		{
-			ItemFilter languageFilter = new CompositeFilter(new AccessFilter(), new PublishedFilter());
+			ItemFilter languageFilter = new AllFilter(new AccessFilter(), new PublishedFilter());
 			IEnumerable<ContentItem> translations = _languageGateway.FindTranslations(Find.ClosestStartPage);
 			foreach (ContentItem translation in languageFilter.Pipe(translations))
 			{
@@ -51,17 +54,19 @@ namespace N2.Templates.Mvc.Controllers
 			ContentItem branchRoot = Find.AncestorAtLevel(2, ancestors, N2.Find.CurrentPage);
 			var model = new SubMenuModel();
 
-			if (branchRoot != null && !startPage.Equals(CurrentPage) && branchRoot.GetChildren(new NavigationFilter()).Count > 0)
+			if (branchRoot != null && !startPage.Equals(CurrentPage))
 			{
-				model.CurrentItem = Find.AncestorAtLevel(3, ancestors, CurrentPage) ?? CurrentPage;
-				model.BranchRoot = branchRoot;
-				model.Items = branchRoot.GetChildren(new NavigationFilter());
-			}
-			else
-			{
-				model.Visible = false;
+				var children = branchRoot.GetChildren(new NavigationFilter()).TryAppendCreatorNode(Engine, branchRoot).ToList();
+				if(children.Count > 0)
+				{
+					model.CurrentItem = Find.AncestorAtLevel(3, ancestors, CurrentPage) ?? CurrentPage;
+					model.BranchRoot = branchRoot;
+					model.Items = children;
+					return PartialView(model);
+				}
 			}
 
+			model.Visible = false;
 			return PartialView(model);
 		}
 

@@ -35,7 +35,7 @@ namespace N2.Web
 									   ConfigurationManagerWrapper configuration)
 		{
 			rewriteMethod = configuration.Sections.Web.Web.Rewrite;
-			managementUrl = configuration.Sections.Management.ManagementInterfaceUrl;
+			managementUrl = configuration.Sections.Management.Paths.ManagementInterfaceUrl;
 			this.webContext = webContext;
 			this.broker = broker;
 			this.adapters = adapters;
@@ -66,7 +66,6 @@ namespace N2.Web
 					Url.SetToken("{IconsUrl}", Url.ResolveTokens(Url.ManagementUrlToken + "/Resources/icons"));
 				}
 			}
-
 			PathData data = dispatcher.GetCurrentPath();
 			webContext.CurrentPath = data;
 

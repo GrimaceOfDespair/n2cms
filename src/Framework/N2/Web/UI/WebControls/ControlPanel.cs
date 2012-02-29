@@ -13,6 +13,7 @@ using N2.Engine;
 using N2.Plugin;
 using N2.Resources;
 using N2.Web.Parts;
+using N2.Security;
 
 namespace N2.Web.UI.WebControls
 {
@@ -121,7 +122,7 @@ jQuery(document).ready(function(){{
 
 		protected override void CreateChildControls()
 		{
-			ControlPanelState state = GetState(Page.User, Page.Request.QueryString);
+			ControlPanelState state = GetState(Page.GetEngine().SecurityManager, Page.User, Page.Request.QueryString);
 
 			if (state == ControlPanelState.Hidden)
 			{
@@ -230,6 +231,7 @@ jQuery(document).ready(function(){{
 
 		private void RegisterDragDropScripts()
 		{
+			Register.JavaScript(Page, Register.SelectedQueryKeyRegistrationScript(), ScriptPosition.Header, ScriptOptions.ScriptTags | ScriptOptions.Prioritize);
 			Register.JQueryUi(Page);
 			Register.JavaScript(Page, DragDropScriptUrl);
 
@@ -243,14 +245,14 @@ jQuery(document).ready(function(){{
 			Controls.Add(pluginPanel);
 
 			ContentItem start = Engine.Resolve<IUrlParser>().StartPage;
-			ContentItem root = Engine.Persister.Repository.Load(Engine.Resolve<IHost>().CurrentSite.RootItemID);
+			ContentItem root = Engine.Persister.Repository.Get(Engine.Resolve<IHost>().CurrentSite.RootItemID);
 			foreach (IControlPanelPlugin plugin in Engine.Resolve<IPluginFinder>().GetPlugins<IControlPanelPlugin>())
 			{
 				var span = new HtmlGenericControl("span");
 				span.Attributes["class"] = "control";
 				pluginPanel.Controls.Add(span);
 
-				plugin.AddTo(span, new PluginContext(CurrentItem, null, start, root, state, Engine, new HttpContextWrapper(Context)));
+				plugin.AddTo(span, new PluginContext(new SelectionUtility(CurrentItem, null), start, root, state, Engine, new HttpContextWrapper(Context)));
 			}
 		}
 
@@ -331,14 +333,20 @@ jQuery(document).ready(function(){{
 		public static ControlPanelState GetState(Control control)
 		{
 			if (HttpContext.Current != null)
-				return GetState(control.Page.User, control.Page.Request.QueryString);
+				return GetState(control.Page.GetEngine().SecurityManager, control.Page.User, control.Page.Request.QueryString);
 
 			return ControlPanelState.Unknown;
 		}
-
+		
+		[Obsolete("Use overload with security parameter")]
 		public static ControlPanelState GetState(IPrincipal user, NameValueCollection queryString)
 		{
-			if (N2.Context.SecurityManager.IsEditor(user))
+			return GetState(N2.Context.Current.SecurityManager, user, queryString);
+		}
+
+		public static ControlPanelState GetState(ISecurityManager security, IPrincipal user, NameValueCollection queryString)
+		{
+			if (security.IsEditor(user))
 			{
 				if (queryString["edit"] == "true")
 					return ControlPanelState.Editing;
@@ -425,7 +433,7 @@ jQuery(document).ready(function(){{
 
 		public static string DragDropScriptInitialization()
 		{
-			return string.Format(@"window.n2ddcp = new n2DragDrop({{ copy:'{0}/copy.n2.ashx', move:'{0}/move.n2.ashx', remove:'{0}/remove.n2.ashx', create:'{0}/create.n2.ashx' }});", Url.ResolveTokens("{ManagementUrl}/Resources/Js"));
+			return string.Format(@"window.n2ddcp = new n2DragDrop({{ copy:'{0}/Resources/Js/copy.n2.ashx', move:'{0}/Resources/Js/move.n2.ashx', remove:'{0}/Resources/Js/remove.n2.ashx', create:'{0}/Resources/Js/create.n2.ashx', editsingle:'{0}/Content/EditSingle.aspx' }});", Url.ResolveTokens("{ManagementUrl}"));
 		}
 	}
 }

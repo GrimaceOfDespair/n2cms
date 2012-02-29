@@ -11,12 +11,14 @@ using N2.Definitions.Static;
 using N2.Engine;
 using N2.Web.Mvc;
 using N2.Web;
+using log4net;
 
 namespace N2.Definitions.Runtime
 {
 	[Service]
 	public class ViewTemplateAnalyzer
 	{
+		private readonly ILog logger = LogManager.GetLogger(typeof (ViewTemplateAnalyzer));
 		IProvider<ViewEngineCollection> viewEnginesProvider;
 		DefinitionMap map;
 		DefinitionBuilder builder;
@@ -62,7 +64,7 @@ namespace N2.Definitions.Runtime
 
 			var rd = new RouteData();
 			bool isPage = model.IsPage;
-			rd.ApplyCurrentItem(controllerName, Path.GetFileNameWithoutExtension(file.Name), isPage ? model : new StubItem(), isPage ? null : model);
+			RouteExtensions.ApplyCurrentItem(rd, controllerName, Path.GetFileNameWithoutExtension(file.Name), isPage ? model : new StubItem(), isPage ? null : model);
 
 			var cctx = new ControllerContext(httpContext, rd, new StubController());
 
@@ -87,7 +89,7 @@ namespace N2.Definitions.Runtime
 			{
 				var vdd = new ViewDataDictionary();
 				cctx.Controller.ViewData = vdd;
-				vdd["RegistrationExpression"] = re;
+				N2.Web.Mvc.Html.RegistrationExtensions.SetRegistrationExpression(cctx.HttpContext, re);
 
 				try
 				{
@@ -95,10 +97,14 @@ namespace N2.Definitions.Runtime
 				}
 				catch (Exception ex)
 				{
-					Trace.WriteLine(ex);
+					logger.Error(ex);
 					if (re.IsDefined)
 						throw;
 					return null;
+				}
+				finally
+				{
+					N2.Web.Mvc.Html.RegistrationExtensions.SetRegistrationExpression(cctx.HttpContext, null);
 				}
 
 				if (re.IsDefined)

@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" MasterPageFile="../Framed.master" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="N2.Edit.Globalization._Default" %>
+﻿<%@ Page Language="C#" MasterPageFile="../Framed.master" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="N2.Edit.Globalization._Default" meta:resourcekey="PageResource1" %>
 <%@ Register TagPrefix="lang" TagName="Languages" Src="Languages.ascx" %>
 <%@ Register TagPrefix="edit" Namespace="N2.Edit.Web.UI.Controls" Assembly="N2.Management" %>
 <%@ Import Namespace="N2.Web" %>
@@ -30,7 +30,7 @@
 			    <tr class="selected">
 			        <td>
 						<% if (Selection.SelectedItem.Parent != null){ %>
-							<a href="Default.aspx?selected=<%# Selection.SelectedItem.Parent.Path %>"><img src="../../Resources/icons/bullet_toggle_minus.png" class="up" /></a>
+							<a href="Default.aspx?<%# N2.Edit.SelectionUtility.SelectedQueryKey %>=<%# Selection.SelectedItem.Parent.Path %>"><img src="../../Resources/icons/bullet_toggle_minus.png" class="up" /></a>
 						<% } %>
 					</td>
 			        <lang:Languages runat="server" DataSource='<%# GetTranslations(Selection.SelectedItem) %>' />
@@ -41,7 +41,7 @@
 				<ItemTemplate>
 					<tr class="<%# Container.ItemIndex % 2 == 1 ? "alt" : "" %> i<%# Container.ItemIndex %>">
 					    <td>
-							<asp:HyperLink runat="server" Visible="<%# ((N2.ContentItem)Container.DataItem).GetChildren().Count > 0 %>" href='<%# Eval("Path", "Default.aspx?selected={0}") %>'><img src="../../Resources/icons/bullet_toggle_plus.png" class="down" /></asp:HyperLink>
+							<asp:HyperLink runat="server" Visible="<%# ((N2.ContentItem)Container.DataItem).GetChildren().Count > 0 %>" href='<%# "Default.aspx?" + N2.Edit.SelectionUtility.SelectedQueryKey + "=" + Eval("Path") %>'><img src="../../Resources/icons/bullet_toggle_plus.png" class="down" /></asp:HyperLink>
 						</td>
 						<lang:Languages runat="server" DataSource='<%# GetTranslations((N2.ContentItem)Container.DataItem) %>' />
 					</tr>
@@ -53,7 +53,7 @@
 				<ItemTemplate>
 					<tr class="<%# Container.ItemIndex % 2 == 1 ? "alt" : "" %> i<%# Container.ItemIndex %>">
 					    <td>
-							<asp:HyperLink runat="server" Visible="<%# ((N2.ContentItem)Container.DataItem).GetChildren().Count > 0 %>" href='<%# Eval("Path", "Default.aspx?selected={0}") %>'><img src="../../Resources/icons/bullet_toggle_plus.png" class="down" /></asp:HyperLink>
+							<asp:HyperLink runat="server" Visible="<%# ((N2.ContentItem)Container.DataItem).GetChildren().Count > 0 %>" href='<%# Eval("Path", "Default.aspx?" + N2.Edit.SelectionUtility.SelectedQueryKey + "={0}") %>'><img src="../../Resources/icons/bullet_toggle_plus.png" class="down" /></asp:HyperLink>
 						</td>
 						<lang:Languages runat="server" DataSource='<%# GetTranslations((N2.ContentItem)Container.DataItem) %>' />
 					</tr>
@@ -61,9 +61,11 @@
 				<FooterTemplate></tbody></FooterTemplate>
 			</asp:Repeater>
 		</table>
+		<div class="panel">
 		<asp:Label runat="server" Text="Selected: " id="lblSelected" meta:resourceKey="lblSelected" />
 		<asp:Button ID="btnAssociate" runat="server" Text="Associate" OnClick="btnAssociate_Click" meta:resourceKey="btnAssociate" />
 		<asp:Button ID="btnUnassociate" runat="server" Text="Unassociate" OnClick="btnUnassociate_Click" meta:resourceKey="btnUnassociate" />
+		</div>
 	</asp:Panel>
 	<asp:Button ID="btnEnable" runat="server" Text="Enable Globalization" OnClick="btnEnable_Click" meta:resourceKey="btnEnable" />
 </asp:Content>

@@ -97,7 +97,13 @@ namespace N2.Details
 		{
 			ItemEditor itemEditor = editor as ItemEditor;
 			ItemEditor parentEditor = ItemUtility.FindInParents<ItemEditor>(editor.Parent);
-			return itemEditor.UpdateObject(parentEditor.BinderContext.CreateNestedContext(itemEditor, itemEditor.CurrentItem, itemEditor.GetDefinition()));
+			if (itemEditor.UpdateObject(parentEditor.BinderContext.CreateNestedContext(itemEditor, itemEditor.CurrentItem, itemEditor.GetDefinition())))
+			{
+				parentItem[Name] = itemEditor.CurrentItem;
+				return true;
+			}
+			
+			return false;
 		}
 
 		public override void UpdateEditor(ContentItem item, Control editor)
@@ -154,7 +160,10 @@ namespace N2.Details
 			ContentItem child;
 			try
 			{
-				child = Activator.CreateInstance(childItemType, item);
+                child = (ContentItem)System.Activator.CreateInstance(childItemType);
+                child.State = ContentState.New;
+                child.AddTo(item);
+                Activator.NotifyCreated(child);
 			}
 			catch (KeyNotFoundException ex)
 			{

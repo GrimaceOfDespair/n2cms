@@ -7,43 +7,6 @@ using N2.Engine;
 
 namespace N2.Persistence.Proxying
 {
-	//public class DetailPropertyInterceptorFactory
-	//{
-	//    public IInterceptor Create(Type type)
-	//    {
-	//        var interceptableProperties = GetInterceptableProperties(type).ToList();
-	//        if (interceptableProperties.Count == 0)
-	//            return null;
-
-	//        var interceptor = new DetailPropertyInterceptor(type, interceptableProperties);
-	//        return interceptor;
-	//    }
-
-	//    private IEnumerable<PropertyInfo> GetInterceptableProperties(Type type)
-	//    {
-	//        for (Type t = type; t != null; t = t.BaseType)
-	//        {
-	//            foreach (var property in t.GetProperties())
-	//            {
-	//                if (!property.CanRead)
-	//                    continue;
-	//                if (!property.GetGetMethod().IsVirtual)
-	//                    continue;
-	//                if (!property.IsCompilerGenerated())
-	//                    continue;
-
-	//                var attributes = property.GetCustomAttributes(typeof(IInterceptableProperty), true).OfType<IInterceptableProperty>();
-	//                if (attributes.Any(a => a.PersistAs != PropertyPersistenceLocation.Detail))
-	//                    continue;
-	//                if (!attributes.Any(a => a.PersistAs == PropertyPersistenceLocation.Detail))
-	//                    continue;
-
-	//                yield return property;
-	//            }
-	//        }
-	//    }
-	//}
-
 	/// <summary>
 	/// Creates a proxy that rewires auto-generated properties to detail get/set.
 	/// </summary>
@@ -53,13 +16,15 @@ namespace N2.Persistence.Proxying
 		class Tuple
 		{
 			public Type Type;
-			public IInterceptor Interceptor;
+            public IInterceptorBuilder Builder;
 			public Func<IInterceptableType, bool>[] UnproxiedSaveSetters;
 		}
 
 		private readonly Dictionary<string, Tuple> types = new Dictionary<string, Tuple>();
 		private readonly ProxyGenerator generator = new ProxyGenerator();
-		private readonly Type[] additionalInterfacesToProxy = new Type[] { typeof(IInterceptedType), typeof(IInterceptableType)
+		private readonly Type[] additionalInterfacesToProxy = new Type[] { 
+            typeof(IInterceptedType)
+            //, typeof(IInterceptableType)
 		};
 
 		public override void Initialize(IEnumerable<Type> interceptedTypes)
@@ -74,7 +39,7 @@ namespace N2.Persistence.Proxying
 				types[type.FullName] = new Tuple 
 				{ 
 					Type = type, 
-					Interceptor = interceptor,
+					Builder = interceptor,
 					UnproxiedSaveSetters = GetSaveSetters(interceptableProperties).ToArray()
 				};
 			}
@@ -92,14 +57,14 @@ namespace N2.Persistence.Proxying
 				yield return (interceptable) =>
 					{
 						object propertyValue = getter.Invoke(interceptable, null);
-						object detailValue = interceptable.GetDetail(propertyName);
+						object detailValue = interceptable.GetValue(propertyName);
 
 						if (propertyValue == null && detailValue == null)
 							return false;
 						if (propertyValue != null && propertyValue.Equals(detailValue))
 							return false;
 						
-						interceptable.SetDetail(propertyName, propertyValue, propertyType);
+						interceptable.SetValue(propertyName, propertyValue, propertyType);
 						return true;
 					};
 			}
@@ -119,9 +84,9 @@ namespace N2.Persistence.Proxying
 						continue;
 
 					var attributes = property.GetCustomAttributes(typeof(IInterceptableProperty), true).OfType<IInterceptableProperty>();
-					if (attributes.Any(a => a.PersistAs != PropertyPersistenceLocation.Detail))
+					if (attributes.Any(a => a.PersistAs != PropertyPersistenceLocation.Detail && a.PersistAs != PropertyPersistenceLocation.DetailCollection))
 						continue;
-					if (!attributes.Any(a => a.PersistAs == PropertyPersistenceLocation.Detail))
+					if (!attributes.Any(a => a.PersistAs == PropertyPersistenceLocation.Detail || a.PersistAs == PropertyPersistenceLocation.DetailCollection))
 						continue;
 
 					yield return property;
@@ -135,7 +100,7 @@ namespace N2.Persistence.Proxying
 			if (!types.TryGetValue(typeName, out tuple))
 				return null;
 
-			return generator.CreateClassProxy(tuple.Type, additionalInterfacesToProxy, tuple.Interceptor);
+            return generator.CreateClassProxy(tuple.Type, additionalInterfacesToProxy, tuple.Builder.Interceptor);
 		}
 
 		public override bool OnSaving(object instance)

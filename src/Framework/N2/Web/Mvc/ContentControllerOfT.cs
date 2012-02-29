@@ -36,11 +36,19 @@ namespace N2.Web.Mvc
 			set { engine = value; }
 		}
 
+		private static string ItemOverrideKey { get { return "Override." + ContentRoute.ContentPartKey; } }
+
 		/// <summary>The content item associated with the requested path.</summary>
 		public virtual T CurrentItem
 		{
 			get
 			{
+				if (currentItem == null 
+					&& ControllerContext.ParentActionViewContext != null 
+					&& ControllerContext.ParentActionViewContext.RouteData.DataTokens.ContainsKey(ItemOverrideKey))
+					//  bypass normal retrieval to handle rendering of auto-generated parts wihtout ID
+					currentItem = ControllerContext.ParentActionViewContext.RouteData.DataTokens[ItemOverrideKey] as T;
+
 				return currentItem
 					?? (currentItem = ControllerContext.RequestContext.CurrentItem<T>());
 			}
@@ -71,7 +79,8 @@ namespace N2.Web.Mvc
 			set { currentPart = value; }
 		}
 
-		public ControllerContentHelper Content
+		/// <summary>Access to commonly used APIs.</summary>
+		public new ControllerContentHelper Content
 		{
 			get { return content ?? (content = new ControllerContentHelper(Engine, () => new PathData { CurrentPage = CurrentPage, CurrentItem = CurrentItem })); }
 			set { content = value; }
@@ -88,6 +97,7 @@ namespace N2.Web.Mvc
 				return View(CurrentItem);
 			else
 				return PartialView(CurrentItem);
+
 		}
 
 
@@ -108,7 +118,7 @@ namespace N2.Web.Mvc
 			if (ControllerContext.IsChildAction || CurrentItem == null)
 				return;
 
-			var gateway = Engine.Resolve<ILanguageGateway>();
+			var gateway = Engine.Resolve<LanguageGatewaySelector>().GetLanguageGateway(CurrentItem);
 			if (!gateway.Enabled)
 				return;
 

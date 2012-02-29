@@ -9,14 +9,20 @@ using System.Diagnostics;
 using System.Web.Routing;
 using System.Web;
 using N2.Web.Mvc;
+using log4net;
 
 namespace N2.Details
 {
 	public class DisplayableTokensAttribute : AbstractDisplayableAttribute, IContentTransformer
 	{
+		/// <summary>String that suffixes the detail name when tokens are stored in the detail collection.</summary>
+		public const string CollectionSuffix = "_Tokens";
+
+		private readonly ILog logger = LogManager.GetLogger(typeof (DisplayableTokensAttribute));
+
 		public override Control AddTo(ContentItem item, string detailName, Control container)
 		{
-			using(var sw = new StringWriter())
+			using (var sw = new StringWriter())
 			{
 				var rc = new RenderingContext { Content = item, Displayable = this, Html = CreateHtmlHelper(item, sw), PropertyName = detailName };
 				Render(rc, sw);
@@ -31,15 +37,15 @@ namespace N2.Details
 		{
 			var httpContext = new HttpContextWrapper(HttpContext.Current);
 			var routeData = new RouteData();
-			routeData.ApplyCurrentItem("webforms", "index", item.ClosestPage(), item);
+			RouteExtensions.ApplyCurrentItem(routeData, "webforms", "index", item.ClosestPage(), item);
 			return new HtmlHelper(
 				new ViewContext(
 					new ControllerContext() { HttpContext = httpContext, RequestContext = new RequestContext(httpContext, routeData), RouteData = routeData },
-					new WebFormView(HttpContext.Current.Request.AppRelativeCurrentExecutionFilePath), 
-					new ViewDataDictionary(), 
-					new TempDataDictionary(), 
-					writer), 
-				new ViewPage(), 
+					new WebFormView(HttpContext.Current.Request.AppRelativeCurrentExecutionFilePath),
+					new ViewDataDictionary(),
+					new TempDataDictionary(),
+					writer),
+				new ViewPage(),
 				RouteTable.Routes);
 		}
 
@@ -55,15 +61,15 @@ namespace N2.Details
 		public bool Transform(ContentItem item)
 		{
 			string text = item[Name] as string;
-			if(text != null)
+			if (text != null)
 			{
-				string detailName = Name + "_Tokens";
+				string collectionName = Name + CollectionSuffix;
 				int i = 0;
 				var p = new Parser(new TemplateAnalyzer());
 				foreach (var c in p.Parse(text).Where(c => c.Command != Parser.TextCommand))
 				{
-					var dc = item.GetDetailCollection(detailName, true);
-					var cd = ContentDetail.Multi(detailName, stringValue: c.Tokens.Select(t => t.Fragment).StringJoin(), integerValue: c.Tokens.First().Index);
+					var dc = item.GetDetailCollection(collectionName, true);
+					var cd = ContentDetail.Multi(collectionName, stringValue: c.Tokens.Select(t => t.Fragment).StringJoin(), integerValue: c.Tokens.First().Index);
 					cd.EnclosingItem = item;
 					cd.EnclosingCollection = dc;
 
@@ -71,16 +77,25 @@ namespace N2.Details
 						dc.Details[i] = cd;
 					else
 						dc.Details.Add(cd);
-					i++;					
+					i++;
 				}
 				if (i > 0)
 				{
-					var dc = item.GetDetailCollection(detailName, true);
+					var dc = item.GetDetailCollection(collectionName, true);
 					for (int j = dc.Details.Count - 1; j >= i; j--)
 					{
 						dc.Details.RemoveAt(j);
 					}
 					return true;
+				}
+				else if (i == 0)
+				{
+					var dc = item.GetDetailCollection(collectionName, false);
+					if (dc != null)
+					{
+						item.DetailCollections.Remove(dc);
+						return true;
+					}
 				}
 			}
 			return false;
@@ -94,7 +109,7 @@ namespace N2.Details
 			if (text == null)
 				return;
 
-			var tokens = context.Content.GetDetailCollection(context.PropertyName + "_Tokens", false);
+			var tokens = context.Content.GetDetailCollection(context.PropertyName + CollectionSuffix, false);
 			if (tokens != null)
 			{
 				int lastFragmentEnd = 0;
@@ -107,13 +122,20 @@ namespace N2.Details
 					string tokenTemplate = detail.StringValue.TextUntil(2, '|', '}');
 
 					ViewEngineResult vr = null;
-					try
+					if (context.Html.ViewContext.HttpContext.IsCustomErrorEnabled)
 					{
-						vr = ViewEngines.Engines.FindPartialView(context.Html.ViewContext, "TokenTemplates/" + tokenTemplate);
+						try
+						{
+							vr = ViewEngines.Engines.FindPartialView(context.Html.ViewContext, "TokenTemplates/" + tokenTemplate);
+						}
+						catch (System.Exception ex)
+						{
+							logger.Error(ex);
+						}
 					}
-					catch (System.Exception ex)
+					else
 					{
-						Trace.WriteLine(ex);
+						vr = ViewEngines.Engines.FindPartialView(context.Html.ViewContext, "TokenTemplates/" + tokenTemplate); // duplicated to preserve stack trace
 					}
 					if (vr != null && vr.View != null)
 					{

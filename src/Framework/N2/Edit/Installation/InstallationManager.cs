@@ -18,8 +18,10 @@ using NHibernate;
 using NHibernate.Driver;
 using NHibernate.SqlTypes;
 using NHibernate.Tool.hbm2ddl;
+using log4net;
 using Environment = NHibernate.Cfg.Environment;
 using N2.Plugin;
+using N2.Configuration;
 
 namespace N2.Edit.Installation
 {
@@ -32,6 +34,7 @@ namespace N2.Edit.Installation
 	{
 		public const string InstallationAppPath = "Installation.AppPath";
 		public const string installationHost = "Installation.Host";
+    	private readonly ILog logger = LogManager.GetLogger(typeof (InstallationManager));
 		
 		IConfigurationBuilder configurationBuilder;
 		ContentActivator activator;
@@ -41,9 +44,10 @@ namespace N2.Edit.Installation
         IHost host;
     	IWebContext webContext;
 		DefinitionMap map;
-		ConnectionContext connectionContext;
+		ConnectionMonitor connectionContext;
+		bool isDatabaseFileSystemEnbled = false;
 
-		public InstallationManager(IHost host, DefinitionMap map, ContentActivator activator, Importer importer, IPersister persister, ISessionProvider sessionProvider, IConfigurationBuilder configurationBuilder, IWebContext webContext, ConnectionContext connectionContext)
+		public InstallationManager(IHost host, DefinitionMap map, ContentActivator activator, Importer importer, IPersister persister, ISessionProvider sessionProvider, IConfigurationBuilder configurationBuilder, IWebContext webContext, ConnectionMonitor connectionContext, DatabaseSection config)
 		{
             this.host = host;
 			this.map = map;
@@ -54,6 +58,7 @@ namespace N2.Edit.Installation
             this.configurationBuilder = configurationBuilder;
         	this.webContext = webContext;
 			this.connectionContext = connectionContext;
+			this.isDatabaseFileSystemEnbled = config.Files.StorageLocation == FileStoreLocation.Database;
 		}
         
 		NHibernate.Cfg.Configuration cfg;
@@ -134,7 +139,7 @@ namespace N2.Edit.Installation
 
 		public DatabaseStatus GetStatus()
 		{
-			Trace.WriteLine("InstallationManager: checking database status");
+			logger.Debug("InstallationManager: checking database status");
 
 			DatabaseStatus status = new DatabaseStatus();
 
@@ -187,28 +192,35 @@ namespace N2.Edit.Installation
 			try
 			{
 				status.DatabaseVersion = 0;
-				sessionProvider.OpenSession.Session.CreateQuery("select ci.ID from ContentItem ci").SetMaxResults(1).List();
+				sessionProvider.OpenSession.Session.CreateQuery("select ci.ID from " + typeof(ContentItem).Name + " ci").SetMaxResults(1).List();
 				status.DatabaseVersion = 1;
 
 				// checking for properties added between version 1 and 2
-				sessionProvider.OpenSession.Session.CreateQuery("select ci.AncestralTrail from ContentItem ci").SetMaxResults(1).List();
+				sessionProvider.OpenSession.Session.CreateQuery("select ci.AncestralTrail from " + typeof(ContentItem).Name + " ci").SetMaxResults(1).List();
 				status.DatabaseVersion = 2;
 
 				// checking for properties added between version 2 and 3
-				sessionProvider.OpenSession.Session.CreateQuery("select ci.AlteredPermissions from ContentItem ci").SetMaxResults(1).List();
+				sessionProvider.OpenSession.Session.CreateQuery("select ci.AlteredPermissions from " + typeof(ContentItem).Name + " ci").SetMaxResults(1).List();
 				status.DatabaseVersion = 3;
 
 				// checking for properties added between version 3 and 4
-				sessionProvider.OpenSession.Session.CreateQuery("select ci.TemplateKey from ContentItem ci").SetMaxResults(1).List();
+				sessionProvider.OpenSession.Session.CreateQuery("select ci.TemplateKey from " + typeof(ContentItem).Name + " ci").SetMaxResults(1).List();
 				status.DatabaseVersion = 4;
 
+				if (isDatabaseFileSystemEnbled)
+				{
+					// checking file system table (if enabled)
+					sessionProvider.OpenSession.Session.CreateQuery("select ci from " + typeof(N2.Edit.FileSystem.NH.FileSystemItem).Name +  " ci").SetMaxResults(1).List();
+					status.DatabaseVersion = 5;
+				}
+
 				// checking persistable properties added in application
-				sessionProvider.OpenSession.Session.CreateQuery("select ci from ContentItem ci").SetMaxResults(1).List();
-				status.DatabaseVersion = 5;
+				sessionProvider.OpenSession.Session.CreateQuery("select ci from " + typeof(ContentItem).Name + " ci").SetMaxResults(1).List();
+				status.DatabaseVersion = DatabaseStatus.RequiredDatabaseVersion;
 			}
 			catch (Exception ex)
 			{
-				Trace.WriteLine(ex);
+				logger.Error(ex);
 			}
 		}
 
@@ -227,7 +239,7 @@ namespace N2.Edit.Installation
 			}
 			catch (Exception ex)
 			{
-				Trace.WriteLine(ex);
+				logger.Error(ex);
 				status.HasSchema = false;
 				status.SchemaError = ex.Message;
 				status.SchemaException = ex;
@@ -247,7 +259,7 @@ namespace N2.Edit.Installation
 			}
 			catch(Exception ex)
 			{
-				Trace.WriteLine(ex);
+				logger.Error(ex);
 			}
 		}
 
@@ -459,6 +471,7 @@ namespace N2.Edit.Installation
 
 		public const string QueryItemsWithAuthorizedRoles = "select distinct ci from ContentItem ci join ci.AuthorizedRoles ar where ci.AlteredPermissions is null or ci.AlteredPermissions = 0 order by ci.ID";
 		public const string QueryItemsWithoutAncestralTrail = "from ContentItem ci where ci.AncestralTrail is null order by ci.ID";
+
 		public virtual IEnumerable<ContentItem> ExecuteQuery(string query)
 		{
 			int iterationSize = 100;

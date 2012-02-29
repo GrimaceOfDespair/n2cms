@@ -9,6 +9,8 @@ using N2.Persistence.Serialization;
 using N2.Security;
 using N2.Tests.Serialization.Items;
 using NUnit.Framework;
+using System.Web;
+using N2.Tests.Fakes;
 
 namespace N2.Tests.Serialization
 {
@@ -134,7 +136,7 @@ namespace N2.Tests.Serialization
 			nodes.MoveNext();
 
 			Assert.AreEqual(1, nodes.Count);
-			Assert.AreEqual(alphabet, nodes.Current.Value);
+			Assert.AreEqual(HttpUtility.HtmlEncode(alphabet), nodes.Current.Value);
 		}
 
 		[Test]
@@ -370,7 +372,7 @@ namespace N2.Tests.Serialization
 		{
 			XmlableItem item = CreateOneItem<XmlableItem>(1, "item", null);
 			item.ImageUrl = "da image";
-			AttachmentXmlWriter axw = new AttachmentXmlWriter();
+			AttachmentXmlWriter axw = new AttachmentXmlWriter(new FakeMemoryFileSystem());
 
 			StringBuilder sb = new StringBuilder();
 			StringWriter sw = new StringWriter(sb);

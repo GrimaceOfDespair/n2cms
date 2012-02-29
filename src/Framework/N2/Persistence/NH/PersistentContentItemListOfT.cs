@@ -21,58 +21,81 @@ namespace N2.Persistence.NH
 
 		#region IZonedList<T> Members
 
-		public IList<T> FindParts(string zoneName)
+		public IEnumerable<T> FindParts(string zoneName)
 		{
 			if (this.WasInitialized)
-				return this.Where(i => i.ZoneName == zoneName).ToList();
+				return this.Where(i => i.ZoneName == zoneName).OrderBy(i => i.SortOrder);
 
-			var session = ((ISession)Session);
 			if (zoneName == null)
-				return session.CreateFilter(this, "where ZoneName is null").List<T>();
+				//return Query().Where(i => i.ZoneName == null); 
+				return Session.CreateFilter(this, "where ZoneName is null order by SortOrder").SetCacheable(true).List<T>();
 			else
-				return session.CreateFilter(this, "where ZoneName=:zoneName").SetParameter("zoneName", zoneName).List<T>();
+				//return Query().Where(i => i.ZoneName == zoneName); 
+                return Session.CreateFilter(this, "where ZoneName = :zoneName order by SortOrder").SetCacheable(true).SetParameter("zoneName", zoneName).List<T>();
 		}
 
-		public IList<T> FindPages()
+		public IEnumerable<T> FindNavigatablePages()
 		{
 			if (this.WasInitialized)
-				return this.Where(i => i.ZoneName == null).ToList();
+				return FindPages().Where(p => new VisibleFilter().Match(p) && new PublishedFilter().Match(p)).OrderBy(i => i.SortOrder);
 
-			var session = ((ISession)Session);
-			return session.CreateFilter(this, "where ZoneName is null").List<T>();
+			//var now = Utility.CurrentTime();
+			//return Query().Where(i => i.ZoneName == null)
+			//    .Where(i => i.Visible == true)
+			//    .Where(i => i.Published <= now)
+			//    .Where(i => i.Expires == null || now < i.Expires);
+			return Session.CreateFilter(this, "where ZoneName is null and Visible = 1 and Published <= :published and (Expires is null or Expires > :expires) order by SortOrder")
+				.SetParameter("published", Utility.CurrentTime())
+				.SetParameter("expires", Utility.CurrentTime())
+                .SetCacheable(true)
+                .List<T>();
 		}
 
-		public IList<T> FindParts()
+		public IEnumerable<T> FindPages()
 		{
 			if (this.WasInitialized)
-				return this.Where(i => i.ZoneName != null).ToList();
+				return this.Where(i => i.ZoneName == null).OrderBy(i => i.SortOrder);
 
-			var session = ((ISession)Session);
-			return session.CreateFilter(this, "where ZoneName is not null").List<T>();
+			//return Query().Where(i => i.ZoneName == null);
+            return Session.CreateFilter(this, "where ZoneName is null order by SortOrder").SetCacheable(true).List<T>();
 		}
 
-		public IList<string> FindZoneNames()
+		public IEnumerable<T> FindParts()
 		{
 			if (this.WasInitialized)
-				return this.Select(i => i.ZoneName).Distinct().ToList();
+				return this.Where(i => i.ZoneName != null).OrderBy(i => i.SortOrder);
 
-			var session = ((ISession)Session);
-			return session.CreateFilter(this, "select distinct ZoneName").List<string>();
+			//return Query().Where(i => i.ZoneName != null);
+            return Session.CreateFilter(this, "where ZoneName is not null order by SortOrder").SetCacheable(true).List<T>();
+		}
+
+		public IEnumerable<string> FindZoneNames()
+		{
+			if (this.WasInitialized)
+				return this.Select(i => i.ZoneName).Distinct();
+
+			//return Query().Select(i => i.ZoneName).Distinct();
+            return Session.CreateFilter(this, "select distinct ZoneName").SetCacheable(true).List<string>();
 		}
 
 		#endregion
 
 		#region IQueryableList<T> Members
 
-		public IQueryable<T> Query()
+		public override IQueryable<T> Query()
 		{
 			if (WasInitialized)
 				return this.AsQueryable<T>();
 
 			var parent = Owner as ContentItem;
-			return ((ISession)Session).Query<T>().Where(i => i.Parent == parent);
+			return Session.Query<T>().Where(i => i.Parent == parent);
 		}
 
 		#endregion
+
+		private new ISession Session
+		{
+			get { return ((ISession)base.Session); }
+		}
 	}
 }

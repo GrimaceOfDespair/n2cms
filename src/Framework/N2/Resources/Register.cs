@@ -4,6 +4,7 @@ using System.Web.UI;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
 using N2.Web;
+using N2.Edit;
 
 namespace N2.Resources
 {
@@ -13,7 +14,7 @@ namespace N2.Resources
 	public static class Register
 	{
 		public static bool Debug { get; set; }
-		public const string JQueryVersion = "1.5.2";
+		public const string JQueryVersion = "1.7";
 
 		#region page StyleSheet
 
@@ -21,7 +22,7 @@ namespace N2.Resources
 		/// <param name="page">The page onto which to register the style sheet.</param>
 		/// <param name="type">The type whose assembly contains the embedded style sheet.</param>
 		/// <param name="resourceName">The name of the embedded resource.</param>
-		public static void StyleSheet(Page page, Type type, string resourceName)
+		public static void StyleSheet(this Page page, Type type, string resourceName)
 		{
 			StyleSheet(page, page.ClientScript.GetWebResourceUrl(type, resourceName), Media.All);
 		}
@@ -29,7 +30,7 @@ namespace N2.Resources
 		/// <summary>Register a style sheet reference in the page's header.</summary>
 		/// <param name="page">The page onto which to register the style sheet.</param>
 		/// <param name="resourceUrl">The url to the style sheet to register.</param>
-		public static void StyleSheet(Page page, string resourceUrl)
+		public static void StyleSheet(this Page page, string resourceUrl)
 		{
 			StyleSheet(page, resourceUrl, Media.All);
 		}
@@ -38,7 +39,7 @@ namespace N2.Resources
 		/// <param name="page">The page onto which to register the style sheet.</param>
 		/// <param name="resourceUrl">The url to the style sheet to register.</param>
 		/// <param name="media">The media type to assign, e.g. print.</param>
-		public static void StyleSheet(Page page, string resourceUrl, Media media)
+		public static void StyleSheet(this Page page, string resourceUrl, Media media)
 		{
 			if (page == null) throw new ArgumentNullException("page");
 			if (resourceUrl == null) throw new ArgumentNullException("resourceUrl");
@@ -50,13 +51,13 @@ namespace N2.Resources
 				PlaceHolder holder = GetPlaceHolder(page);
 
 				HtmlLink link = new HtmlLink();
-				link.Href = page.Engine().ManagementPaths.ResolveResourceUrl(resourceUrl);
+				link.Href = Url.ResolveTokens(resourceUrl);
 				link.Attributes["type"] = "text/css";
 				link.Attributes["media"] = media.ToString().ToLower();
 				link.Attributes["rel"] = "stylesheet";
 				holder.Controls.Add(link);
 
-				page.Items[resourceUrl] = null;
+				page.Items[resourceUrl] = true;
 			}
 		}
 
@@ -68,7 +69,7 @@ namespace N2.Resources
 		/// <param name="page">The page in whose header to register the javascript.</param>
 		/// <param name="type">The type in whose assembly the javascript is embedded.</param>
 		/// <param name="resourceName">The name of the embedded resource.</param>
-		public static void JavaScript(Page page, Type type, string resourceName)
+		public static void JavaScript(this Page page, Type type, string resourceName)
 		{
 			JavaScript(page, page.ClientScript.GetWebResourceUrl(type, resourceName));
 		}
@@ -78,7 +79,7 @@ namespace N2.Resources
 		/// <param name="type">The type in whose assembly the javascript is embedded.</param>
 		/// <param name="resourceName">The name of the embedded resource.</param>
 		/// <param name="options">Options flag.</param>
-		public static void JavaScript(Page page, Type type, string resourceName, ScriptOptions options)
+		public static void JavaScript(this Page page, Type type, string resourceName, ScriptOptions options)
 		{
 			JavaScript(page, page.ClientScript.GetWebResourceUrl(type, resourceName), options);
 		}
@@ -88,7 +89,7 @@ namespace N2.Resources
 		/// <param name="script">The script to add.</param>
 		/// <param name="position">Where to add the script.</param>
 		/// <param name="options">Script registration options.</param>
-		public static void JavaScript(Page page, string script, ScriptPosition position, ScriptOptions options)
+		public static void JavaScript(this Page page, string script, ScriptPosition position, ScriptOptions options)
 		{
 			if (page == null) throw new ArgumentNullException("page");
 			
@@ -99,17 +100,17 @@ namespace N2.Resources
 			else if (position == ScriptPosition.Bottom)
 			{
 				string key = script.GetHashCode().ToString();
-				if (Is(options, ScriptOptions.None))
-					page.ClientScript.RegisterClientScriptBlock(typeof (Register), key, script);
-				else if (Is(options, ScriptOptions.ScriptTags))
-					page.ClientScript.RegisterClientScriptBlock(typeof (Register), key, script, true);
-				else if (Is(options, ScriptOptions.DocumentReady))
+				if (options.Is(ScriptOptions.None))
+					page.ClientScript.RegisterStartupScript(typeof(Register), key, script);
+				else if (options.Is(ScriptOptions.ScriptTags))
+					page.ClientScript.RegisterStartupScript(typeof(Register), key, script, true);
+				else if (options.Is(ScriptOptions.DocumentReady))
 				{
-					JQuery(page);
-					page.ClientScript.RegisterClientScriptBlock(typeof (Register), key, EmbedDocumentReady(script), true);
+					page.JQuery();
+					page.ClientScript.RegisterStartupScript(typeof (Register), key, EmbedDocumentReady(script), true);
 				}
-				else if (Is(options, ScriptOptions.Include))
-					page.ClientScript.RegisterClientScriptInclude(key, page.Engine().ManagementPaths.ResolveResourceUrl(script));
+				else if (options.Is(ScriptOptions.Include))
+					page.ClientScript.RegisterClientScriptInclude(key, Url.ResolveTokens(script));
 				else
 					throw new ArgumentException("options");
 			}
@@ -122,7 +123,7 @@ namespace N2.Resources
 			return "jQuery(document).ready(function(){" + script + "});";
 		}
 
-		public static void JavaScript(Page page, string script, ScriptOptions options)
+		public static void JavaScript(this Page page, string script, ScriptOptions options)
 		{
 			if (page == null) throw new ArgumentNullException("page");
 			
@@ -130,25 +131,25 @@ namespace N2.Resources
 			{
 				PlaceHolder holder = GetPlaceHolder(page);
 
-				if (Is(options, ScriptOptions.Include))
+				if (options.Is(ScriptOptions.Include))
 				{
-					AddScriptInclude(page, script, holder, Is(options, ScriptOptions.Prioritize));
+					AddScriptInclude(page, script, holder, options.Is(ScriptOptions.Prioritize));
 				}
-				else if (Is(options, ScriptOptions.None))
+				else if (options.Is(ScriptOptions.None))
 				{
-					holder.Page.Items[script] = AddString(script, holder, Is(options, ScriptOptions.Prioritize));
+					holder.Page.Items[script] = AddString(holder, script, options.Is(ScriptOptions.Prioritize));
 				}
 				else
 				{
 					Script scriptHolder = GetScriptHolder(page);
-					if (Is(options, ScriptOptions.ScriptTags))
+					if (options.Is(ScriptOptions.ScriptTags))
 					{
-						holder.Page.Items[script] = AddString(script + Environment.NewLine, scriptHolder, Is(options, ScriptOptions.Prioritize));
+						holder.Page.Items[script] = AddString(scriptHolder, script + Environment.NewLine, Is(options, ScriptOptions.Prioritize));
 					}
-					else if (Is(options, ScriptOptions.DocumentReady))
+					else if (options.Is(ScriptOptions.DocumentReady))
 					{
 						JQuery(page);
-						holder.Page.Items[script] = AddString(EmbedDocumentReady(script) + Environment.NewLine, scriptHolder, Is(options, ScriptOptions.Prioritize));
+						holder.Page.Items[script] = AddString(scriptHolder, EmbedDocumentReady(script) + Environment.NewLine, options.Is(ScriptOptions.Prioritize));
 					}
 				}
 			}
@@ -168,7 +169,7 @@ namespace N2.Resources
 			}
 		}
 
-		private static Literal AddString(string script, Control holder, bool priority)
+		private static Literal AddString(Control holder, string script, bool priority)
 		{
 			Literal l = new Literal();
 			l.Text = script;
@@ -186,7 +187,7 @@ namespace N2.Resources
 			HtmlGenericControl script = new HtmlGenericControl("script");
 			page.Items[resourceUrl] = script;
 
-			resourceUrl = page.Engine().ManagementPaths.ResolveResourceUrl(resourceUrl);
+			resourceUrl = Url.ResolveTokens(resourceUrl);
 
 			script.Attributes["src"] = resourceUrl;
 			script.Attributes["type"] = "text/javascript";
@@ -201,7 +202,7 @@ namespace N2.Resources
 		/// <summary>Registers a script reference in the page's header.</summary>
 		/// <param name="page">The page onto which to register the javascript.</param>
 		/// <param name="resourceUrl">The url to the javascript to register.</param>
-		public static void JavaScript(Page page, string resourceUrl)
+		public static void JavaScript(this Page page, string resourceUrl)
 		{
 			if (page == null) throw new ArgumentNullException("page");
 			if (resourceUrl == null) throw new ArgumentNullException("resourceUrl");
@@ -209,9 +210,9 @@ namespace N2.Resources
 			JavaScript(page, resourceUrl, ScriptOptions.Include);
 		}
 
-		public static void JQuery(Page page)
+		public static void JQuery(this Page page)
 		{
-			JavaScript(page, JQueryPath(), ScriptOptions.Prioritize | ScriptOptions.Include);
+			JavaScript(page, JQueryPath(), ScriptPosition.Header, ScriptOptions.Prioritize | ScriptOptions.Include);
 		}
 
 		public static string JQueryPath()
@@ -266,7 +267,7 @@ namespace N2.Resources
 				page.Items[key] = new object();
 				if (registerTabCss)
 				{
-					StyleSheet(page, page.Engine().ManagementPaths.ResolveResourceUrl("{ManagementUrl}/Resources/Css/TabPanel.css"));
+					StyleSheet(page, Url.ResolveTokens("{ManagementUrl}/Resources/Css/TabPanel.css"));
 				}
 			}
 		}
@@ -276,27 +277,27 @@ namespace N2.Resources
 			TabPanel(page, selector, true);
 		}
 
-		private static bool Is(ScriptOptions options, ScriptOptions expectedOption)
+		private static bool Is(this ScriptOptions options, ScriptOptions expectedOption)
 		{
 			return (options & expectedOption) == expectedOption;
 		}
 		#endregion
 
-		public static void JQueryPlugins(Page page)
+		public static void JQueryPlugins(this Page page)
 		{
-			JQuery(page);
-			JavaScript(page, Url.ResolveTokens("{ManagementUrl}/Resources/Js/plugins.ashx?v=" + typeof(Register).Assembly.GetName().Version));
+			page.JQuery();
+			page.JavaScript(Url.ResolveTokens("{ManagementUrl}/Resources/Js/plugins.ashx?v=" + JQueryVersion), ScriptPosition.Header, ScriptOptions.Include);
 		}
 
-		public static void JQueryUi(Page page)
+		public static void JQueryUi(this Page page)
 		{
-			JQuery(page);
-			JavaScript(page, Url.ResolveTokens("{ManagementUrl}/Resources/Js/jquery.ui.ashx?v=" + typeof(Register).Assembly.GetName().Version));
+			page.JQuery();
+			page.JavaScript(Url.ResolveTokens("{ManagementUrl}/Resources/Js/jquery.ui.ashx?v=" + JQueryVersion), ScriptPosition.Header, ScriptOptions.Include);
 		}
 
-		public static void TinyMCE(Page page)
+		public static void TinyMCE(this Page page)
 		{
-			JavaScript(page, page.Engine().ManagementPaths.ResolveResourceUrl("{ManagementUrl}/Resources/tiny_mce/tiny_mce.js"));
+			JavaScript(page, Url.ResolveTokens("{ManagementUrl}/Resources/tiny_mce/tiny_mce.js"));
 		}
 
 		#endregion
@@ -354,12 +355,12 @@ namespace N2.Resources
 
 		public static string JQueryPlugins(IDictionary<string, object> stateCollection)
 		{
-			return JQuery(stateCollection) + JavaScript(stateCollection, "{ManagementUrl}/Resources/Js/plugins.ashx?v=" + typeof(Register).Assembly.GetName().Version);
+			return JQuery(stateCollection) + JavaScript(stateCollection, "{ManagementUrl}/Resources/Js/plugins.ashx?v=" + JQueryVersion);
 		}
 
 		public static string JQueryUi(IDictionary<string, object> stateCollection)
 		{
-			return JQuery(stateCollection) + JavaScript(stateCollection, "{ManagementUrl}/Resources/Js/jquery.ui.ashx?v=" + typeof(Register).Assembly.GetName().Version);
+			return JQuery(stateCollection) + JavaScript(stateCollection, "{ManagementUrl}/Resources/Js/jquery.ui.ashx?v=" + JQueryVersion);
 		}
 
 		public static string TinyMCE(IDictionary<string, object> stateCollection)
@@ -377,5 +378,10 @@ namespace N2.Resources
 			return string.Format("<link href=\"{0}\" rel=\"stylesheet\" type=\"text/css\" />", Url.ResolveTokens(resourceUrl));
 		}
 		#endregion
+
+		internal static string SelectedQueryKeyRegistrationScript()
+		{
+			return "n2SelectedQueryKey = '" + SelectionUtility.SelectedQueryKey + "';";
+		}
 	}
 }

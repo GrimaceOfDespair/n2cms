@@ -182,7 +182,7 @@ namespace N2.Tests.Definitions
 		{
 			ItemDefinition parentDefinition = engine.Definitions.GetDefinition(typeof(ItemWithDetails)); // allows child ItemInZone1Or2, restricts parent ItemInZone1Or2
 			ItemDefinition childDefinition1 = engine.Definitions.GetDefinition(typeof (ItemInZone1Or2)); // -
-			bool itemWithDetailsAllowsItemInZone1Or2AsChild = parentDefinition.IsChildAllowed(engine.Definitions, childDefinition1);
+			bool itemWithDetailsAllowsItemInZone1Or2AsChild = parentDefinition.IsChildAllowed(engine.Definitions, new ItemWithDetails(), childDefinition1);
 			Assert.IsTrue(itemWithDetailsAllowsItemInZone1Or2AsChild);
 		}
 
@@ -191,7 +191,7 @@ namespace N2.Tests.Definitions
 		{
 			ItemDefinition parentDefinition = engine.Definitions.GetDefinition(typeof(ItemWithDetails)); // allows child ItemInZone1Or2, restricts parent ItemInZone1Or2
 			ItemDefinition childDefinition2 = engine.Definitions.GetDefinition(typeof(SideshowItem)); // allows no parents
-			bool itemWithDetailsAllowsSideshowItemAsChild = parentDefinition.IsChildAllowed(engine.Definitions, childDefinition2);
+			bool itemWithDetailsAllowsSideshowItemAsChild = parentDefinition.IsChildAllowed(engine.Definitions, new ItemWithDetails(), childDefinition2);
 			Assert.IsFalse(itemWithDetailsAllowsSideshowItemAsChild);
 		}
 
@@ -199,8 +199,9 @@ namespace N2.Tests.Definitions
 		public void IsChildTypeAllowedWorksAsExpected()
 		{
 			ItemDefinition parentDefinition = engine.Definitions.GetDefinition(typeof(ItemWithDetails));
-			Assert.That(parentDefinition.GetAllowedChildren(engine.Definitions, null).Contains(engine.Definitions.GetDefinition(typeof(ItemInZone1Or2))));
-			Assert.That(!parentDefinition.GetAllowedChildren(engine.Definitions, null).Contains(engine.Definitions.GetDefinition(typeof(SideshowItem))));
+            var allowedChildren = parentDefinition.GetAllowedChildren(engine.Definitions, new ItemWithDetails());
+			Assert.That(allowedChildren.Contains(engine.Definitions.GetDefinition(typeof(ItemInZone1Or2))));
+            Assert.That(!allowedChildren.Contains(engine.Definitions.GetDefinition(typeof(SideshowItem))));
 		}
 
 		[Test]

@@ -201,33 +201,29 @@ namespace N2.Collections
 
 		#region IZonedList<T> Members
 
-		public IList<T> FindParts(string zoneName)
+		public IEnumerable<T> FindParts(string zoneName)
 		{
-			return Inner.Where(i => i.ZoneName == zoneName).ToList();
+			return Inner.Where(i => i.ZoneName == zoneName);
 		}
 
-		public IList<T> FindPages()
+		public IEnumerable<T> FindNavigatablePages()
 		{
-			return this.Where(i => i.ZoneName == null).ToList();
+			return FindPages().Where(p => new VisibleFilter().Match(p) && new PublishedFilter().Match(p));
 		}
 
-		public IList<T> FindParts()
+		public IEnumerable<T> FindPages()
 		{
-			return this.Where(i => i.ZoneName != null).ToList();
+			return this.Where(i => i.ZoneName == null);
 		}
 
-		public IList<string> FindZoneNames()
+		public IEnumerable<T> FindParts()
+		{
+			return this.Where(i => i.ZoneName != null);
+		}
+
+		public IEnumerable<string> FindZoneNames()
 		{
 			return this.Select(i => i.ZoneName).Distinct().ToList();
-		}
-
-		#endregion
-
-		#region IQueryableList<T> Members
-
-		public IQueryable<T> Query()
-		{
-			return this.AsQueryable<T>();
 		}
 
 		#endregion

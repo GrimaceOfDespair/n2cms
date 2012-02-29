@@ -2,6 +2,7 @@
 using N2.Installation;
 using N2.Integrity;
 using N2.Persistence;
+using N2.Engine;
 
 namespace N2.Edit.FileSystem.Items
 {
@@ -36,7 +37,13 @@ namespace N2.Edit.FileSystem.Items
 
 		public override string Url
 		{
-			get { return url ?? N2.Web.Url.Combine(Parent.Url, Name); }
+			get 
+			{
+				return url 
+					?? (Parent != null
+						? N2.Web.Url.Combine(Parent.Url, Name) 
+						: N2.Web.Url.Combine("~/", Name));
+			}
 		}
 
 		public override string IconUrl
@@ -117,8 +124,7 @@ namespace N2.Edit.FileSystem.Items
 				throw new NameOccupiedException(this, d);
 
 			FileSystem.CreateDirectory(to);
-			Directory copy = new Directory(FileSystem.GetDirectory(to), d);
-			copy.Set(FileSystem);
+			Directory copy = New(FileSystem.GetDirectory(to), d, DependencyInjector);
 
 			foreach (File f in GetFiles())
 				f.CopyTo(copy);
@@ -130,5 +136,12 @@ namespace N2.Edit.FileSystem.Items
 		}
 
 		#endregion
+
+		internal static Items.Directory New(DirectoryData dir, ContentItem parent, IDependencyInjector injector)
+		{
+			var node = new Directory(dir, parent);
+			injector.FulfilDependencies(node);
+			return node;
+		}
 	}
 }

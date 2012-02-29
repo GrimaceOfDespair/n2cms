@@ -1,6 +1,7 @@
 using System;
 using System.Web.UI;
 using N2.Web.UI.WebControls;
+using N2.Definitions;
 
 namespace N2.Details
 {
@@ -11,11 +12,7 @@ namespace N2.Details
 	///		public class MyItem : N2.ContentItem
 	///		{
 	/// 		[N2.Details.EditableImage("Image", 100)]
-	/// 		public virtual string ImageUrl
-	/// 		{
-	/// 			get { return (string)(GetDetail("ImageUrl")); }
-	/// 			set { SetDetail("ImageUrl", value); }
-	/// 		}
+	/// 		public virtual string ImageUrl { get; set; }
 	///		}
 	/// </example>
 	public class EditableImageAttribute : AbstractEditableAttribute, IDisplayable, IRelativityTransformer, IWritingDisplayable
@@ -59,6 +56,7 @@ namespace N2.Details
 		protected override Control AddEditor(Control container)
 		{
 			FileSelector selector = new FileSelector();
+			selector.SelectableExtensions = FileSelector.ImageExtensions;
 			selector.ID = Name;
 			container.Controls.Add(selector);
 			return selector;

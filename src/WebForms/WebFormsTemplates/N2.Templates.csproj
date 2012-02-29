@@ -51,6 +51,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\lib\Castle.Core.dll</HintPath>
     </Reference>
+    <Reference Include="log4net, Version=1.2.10.0, Culture=neutral, PublicKeyToken=1b44e1d426115821, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -636,6 +637,7 @@
     <Content Include="App_Themes\n2cms\Menu.skin" />
     <Content Include="App_Themes\Corporate\Menu.skin" />
     <Content Include="Views\Web.config" />
+    <Content Include="App_Themes\Web.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="App_Themes\ContentFocus\content_bottom.gif" />
@@ -765,13 +767,7 @@
     <Content Include="Templates\UI\Parts\Text.ascx" />
     <Content Include="Templates\UI\Parts\Top.ascx" />
     <Content Include="Templates\UI\Layouts\TopMenu.ascx" />
-    <Content Include="Templates\UI\Parts\App_LocalResources\Form.ascx.it.resx">
-      <SubType>Designer</SubType>
-    </Content>
     <Content Include="Templates\UI\Parts\App_LocalResources\Form.ascx.resx">
-      <SubType>Designer</SubType>
-    </Content>
-    <Content Include="Templates\UI\Parts\App_LocalResources\Form.ascx.sv.resx">
       <SubType>Designer</SubType>
     </Content>
     <Content Include="Templates\UI\Parts\App_LocalResources\Poll.ascx.resx">

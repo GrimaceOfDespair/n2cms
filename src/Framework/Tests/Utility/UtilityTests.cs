@@ -5,6 +5,8 @@ using N2.Collections;
 using N2.Definitions;
 using N2.Integrity;
 using NUnit.Framework;
+using N2.Edit;
+using Shouldly;
 
 namespace N2.Tests.Utility
 {
@@ -278,6 +280,13 @@ namespace N2.Tests.Utility
 			Assert.IsNull(value);
 		}
 
+		[Test]
+		public void EvaluateStaticProperty_GivesPropertyValue()
+		{
+			object value = N2.Utility.Evaluate(new SelectionUtility((ContentItem)null, (ContentItem)null), "SelectedQueryKey");
+			Assert.That(value, Is.EqualTo(SelectionUtility.SelectedQueryKey));
+		}
+
 		[TestCase("123", 123, typeof (int))]
 		[TestCase("True", true, typeof (bool))]
 		[TestCase("false", false, typeof (bool))]
@@ -295,6 +304,45 @@ namespace N2.Tests.Utility
 		{
 			N2.Utility.SetProperty(item1, "Name", "WhooHoo");
 			Assert.AreEqual("WhooHoo", item1.Name);
+		}
+
+		[Test]
+		public void SetValue_OnMissingProperty_Throws()
+		{
+			Should.Throw<Exception>(() => N2.Utility.SetProperty(item1, "Name2", "WhooHoo"));
+		}
+
+		[Test]
+		public void TrySetValue_SetsProperty()
+		{
+			var result = N2.Utility.TrySetProperty(item1, "Name", "WhooHoo");
+			result.ShouldBe(true);
+			item1.Name.ShouldBe("WhooHoo");
+		}
+
+
+		[Test]
+		public void TrySetValue_OnMissingProperty_ReturnsFalse()
+		{
+			var result = N2.Utility.TrySetProperty(item1, "Name2", "WhooHoo");
+			result.ShouldBe(false);
+		}
+
+		[Test]
+		public void SetValue_OnNestedItem_SetsTheValue()
+		{
+			item2.Parent = item1;
+			N2.Utility.SetProperty(item2, "Parent.Name", "WhooHoo");
+			Assert.AreEqual("WhooHoo", item2.Parent.Name);
+		}
+
+		[Test]
+		public void TrySetValue_OnNestedItem_SetsTheValue()
+		{
+			item2.Parent = item1;
+			var result = N2.Utility.TrySetProperty(item2, "Parent.Name", "WhooHoo");
+			result.ShouldBe(true);
+			Assert.AreEqual("WhooHoo", item2.Parent.Name);
 		}
 
 		[Test]
@@ -589,9 +637,27 @@ namespace N2.Tests.Utility
 			Assert.That(output, Is.EqualTo(input));
 		}
 
+		[Test]
+		public void ExtractFirstSentences_GracefullyHandles_NoDelimiter_AndParagraphs()
+		{
+			string input = "<p>Test test test</p>";
+			string output = N2.Utility.ExtractFirstSentences(input, 250);
+
+			Assert.That(output, Is.EqualTo("Test test test"));
+		}
+
+		[Test]
+		public void ExtractFirstSentences_GracefullyHandles_OnlyParagraphs()
+		{
+			string input = "<p></p>";
+			string output = N2.Utility.ExtractFirstSentences(input, 250);
+
+			Assert.That(output, Is.EqualTo(""));
+		}
+
 		[TestCase(typeof(object), 0)]
-		[TestCase(typeof(ContentItem), 1)]
-		[TestCase(typeof(UtilityItem), 2)]
+		[TestCase(typeof(ContentItem), 2)] // ContentItem(2) : INode(1) : ILink(0)
+		[TestCase(typeof(UtilityItem), 3)] // UtilityItem(3) : ContentItem(2) : INode(1) : ILink(0)
 		public void InheritanceDepth_Classes(Type type, int expectedDepth)
 		{
 			Assert.That(N2.Utility.InheritanceDepth(type), Is.EqualTo(expectedDepth));

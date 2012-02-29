@@ -7,7 +7,7 @@ namespace N2.Persistence.Search
 {
 	public interface IIndexableProperty
 	{
-		bool Index { get; }
+		bool IsIndexable { get; }
 
 		string Name { get; }
 

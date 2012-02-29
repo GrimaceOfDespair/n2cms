@@ -33,55 +33,65 @@ namespace N2.Web
 
 		protected Func<PathData> PathGetter { get; set; }
 
-		public PathData Path
-		{
-			get { return PathGetter(); }
-		}
-
-		// traversing & filtering
-
+		/// <summary>Traverse the content hieararchy.</summary>
 		public virtual TraverseHelper Traverse
 		{
 			get { return new TraverseHelper(Engine, Is, PathGetter); }
 		}
 
+		/// <summary>Filter collections of items.</summary>
 		public virtual FilterHelper Is
 		{
 			get { return new FilterHelper(Engine); }
 		}
 
-		// querying & finding
-
+		/// <summary>Search for content stored in the system.</summary>
 		public SearchHelper Search
 		{
 			get { return new SearchHelper(Engine); }
 		}
 
-		// changing scope
+		/// <summary>Access items in the current context.</summary>
+		public ContextHelper Current
+		{
+			get { return new ContextHelper(Engine, PathGetter); }
+		}
 
+		/// <summary>Get a content helper for an alternative scope.</summary>
+		/// <param name="otherContentItem">The current item of the alternative scope.</param>
+		/// <returns>Another content helper with a different scope.</returns>
 		public virtual ContentHelperBase At(ContentItem otherContentItem)
 		{
 			EnsureAuthorized(otherContentItem);
 
-			return new ContentHelperBase(Engine, () => new PathData { CurrentItem = otherContentItem, CurrentPage = Path.CurrentPage });
+			return new ContentHelperBase(Engine, () => new PathData { CurrentItem = otherContentItem, CurrentPage = Current.Page});
 		}
 
+		/// <summary>Begins a new scope using the current content helper.</summary>
+		/// <param name="newCurrentItem">The current item to use in the new scope.</param>
+		/// <returns>An object that restores the scope upon disposal.</returns>
 		public IDisposable BeginScope(ContentItem newCurrentItem)
 		{
-			EnsureAuthorized(newCurrentItem);
+			if (newCurrentItem == null) return new EmptyDisposable();
 
 			return new ContentScope(newCurrentItem, this);
 		}
 
-		private void EnsureAuthorized(ContentItem newCurrentItem)
+		protected virtual void EnsureAuthorized(ContentItem newCurrentItem)
 		{
-			if (newCurrentItem == null) 
-				return;
-			var user = Services.Resolve<IWebContext>().User;
-			if (!Engine.SecurityManager.IsAuthorized(newCurrentItem, user))
-				throw new PermissionDeniedException(newCurrentItem, user);
+			if (!IsAuthorized(newCurrentItem))
+				throw new PermissionDeniedException(newCurrentItem);
 		}
 
+		private bool IsAuthorized(ContentItem item)
+		{
+			var user = Services.Resolve<IWebContext>().User;
+			return Engine.SecurityManager.IsAuthorized(item, user);
+		}
+
+		/// <summary>Begins a new scope using the current content helper.</summary>
+		/// <param name="newCurrentItemUrlOrId">A string that is parsed as an item id or item url.</param>
+		/// <returns>An object that restores the scope upon disposal.</returns>
 		public IDisposable BeginScope(string newCurrentItemUrlOrId)
 		{
 			if (newCurrentItemUrlOrId != null)
@@ -94,18 +104,33 @@ namespace N2.Web
 			return new EmptyDisposable();
 		}
 
-		private ContentItem Parse(string newCurrentItemUrlOrId)
+		/// <summary>Tries to parse the given string as an item id, or an item url.</summary>
+		/// <param name="itemUrlOrId">An id, or the url to an item.</param>
+		/// <returns>An item or, null if no match was found.</returns>
+		/// <remarks>If the logged on user isn't authoriezd towards the item null is returned.</remarks>
+		public ContentItem Parse(string itemUrlOrId)
 		{
+			if (string.IsNullOrEmpty(itemUrlOrId))
+				return null;
+
 			int id;
 			ContentItem item = null;
-			if (int.TryParse(newCurrentItemUrlOrId, out id))
+			if (int.TryParse(itemUrlOrId, out id))
 				item = Engine.Persister.Get(id);
 
 			if (item == null)
-				item = Services.Resolve<IUrlParser>().Parse(newCurrentItemUrlOrId);
+				item = Services.Resolve<IUrlParser>().Parse(itemUrlOrId);
+
+			if (!IsAuthorized(item))
+				return null;
+
 			return item;
 		}
 
+		/// <summary>Begins a new scope using the current content helper.</summary>
+		/// <param name="newCurrentItemUrlOrId">A string that is parsed as an item id or item url.</param>
+		/// <param name="reallyBeginScope">Option to keep the current scope when the paramter is false.</param>
+		/// <returns>An object that restores the scope upon disposal.</returns>
 		public IDisposable BeginScope(string newCurrentItemUrlOrId, bool reallyBeginScope)
 		{
 			if (!reallyBeginScope)
@@ -113,19 +138,6 @@ namespace N2.Web
 
 			return BeginScope(newCurrentItemUrlOrId);
 		}
-
-		#region class EmptyDisposable
-		class EmptyDisposable : IDisposable
-		{
-			#region IDisposable Members
-
-			public void Dispose()
-			{
-			}
-
-			#endregion
-		}
-		#endregion
 
 		#region class ContentScope
 		class ContentScope : IDisposable
@@ -137,7 +149,7 @@ namespace N2.Web
 			{
 				this.contentHelper = contentHelper;
 				previousGetter = contentHelper.PathGetter;
-				contentHelper.PathGetter = () => new PathData { CurrentItem = newCurrentItem, CurrentPage = previousGetter().CurrentPage };
+				contentHelper.PathGetter = () => new PathData { CurrentItem = newCurrentItem, CurrentPage = newCurrentItem.IsPage ? newCurrentItem : previousGetter().CurrentPage };
 			}
 
 			#region IDisposable Members

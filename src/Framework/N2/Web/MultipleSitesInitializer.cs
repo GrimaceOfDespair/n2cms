@@ -5,28 +5,34 @@ using N2.Definitions;
 using N2.Engine;
 using N2.Persistence;
 using N2.Plugin;
+using log4net;
 
 namespace N2.Web
 {
 	[Service]
 	public class MultipleSitesInitializer : IAutoStart
 	{
-		public MultipleSitesInitializer(IPersister persister, IHost host, ISitesProvider sitesProvider, HostSection config, IDefinitionManager ignored)
+	    private readonly ILog logger = LogManager.GetLogger(typeof (MultipleSitesInitializer));
+
+		public MultipleSitesInitializer(IPersister persister, IHost host, ISitesProvider sitesProvider, ConnectionMonitor context, HostSection config, IDefinitionManager ignored)
 		{
-			Debug.WriteLine("MultipleSitesInitializer");
+			logger.Debug("MultipleSitesInitializer");
 
 			if (config.MultipleSites && config.DynamicSites)
 			{
-				host.AddSites(sitesProvider.GetSites());
-				persister.ItemSaved += delegate(object sender, ItemEventArgs e)
+				context.Online += delegate
 				{
-					if (e.AffectedItem is ISitesSource)
+					host.AddSites(sitesProvider.GetSites());
+					persister.ItemSaved += delegate(object sender, ItemEventArgs e)
 					{
-						IList<Site> sites = Host.ExtractSites(config);
-						sites = Host.Union(sites, sitesProvider.GetSites());
+						if (e.AffectedItem is ISitesSource)
+						{
+							IList<Site> sites = Host.ExtractSites(config);
+							sites = Host.Union(sites, sitesProvider.GetSites());
 
-						host.ReplaceSites(host.DefaultSite, sites);
-					}
+							host.ReplaceSites(host.DefaultSite, sites);
+						}
+					};
 				};
 			}
 		}

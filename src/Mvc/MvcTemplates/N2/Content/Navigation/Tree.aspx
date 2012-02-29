@@ -8,8 +8,8 @@
     <head runat="server">
         <title>Navigation</title>
         <asp:PlaceHolder runat="server">
-		<link rel="stylesheet" href="<%=MapCssUrl("all.css")%>" type="text/css" />
-		<link rel="stylesheet" href="<%=MapCssUrl("framed.css")%>" type="text/css" />
+		<link rel="stylesheet" href="<%= MapCssUrl("all.css") %>" type="text/css" />
+		<link rel="stylesheet" href="<%= MapCssUrl("framed.css") %>" type="text/css" />
 		</asp:PlaceHolder>
 		<script src="../../Resources/Js/ContextMenu.js?v2" type="text/javascript" ></script>
 		<script src="Tree.js" type="text/javascript"></script>
@@ -77,9 +77,9 @@
 		<% if (isFilesSelection) { %>
         	n2nav.handlers["fallback"] = function(e) {
         		e.preventDefault();
-        		if ($(this).attr("data-type") == "File")
+        		if ($(this).attr("data-selectable") == "true")
         			updateOpenerAndClose.call(this, e);
-        		if ($(this).attr("data-type") == "Directory")
+        		else if ($(this).attr("data-type") == "Directory")
         			$(".uploadDirectoryLocation").attr("value", $(this).attr("data-url"));
         	};
     	<% } %>

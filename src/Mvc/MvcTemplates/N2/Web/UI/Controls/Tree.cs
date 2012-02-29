@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Web;
 using System.Web.UI;
 using N2.Collections;
@@ -6,6 +7,8 @@ using N2.Web;
 using N2.Web.UI.WebControls;
 using N2.Engine;
 using N2.Edit.Workflow;
+using System.Web.Mvc;
+using N2.Management.Content.Navigation;
 
 namespace N2.Edit.Web.UI.Controls
 {
@@ -20,6 +23,10 @@ namespace N2.Edit.Web.UI.Controls
 		public Tree()
 		{
 		}
+
+		public string SelectableExtensions { get; set; }
+
+		public string SelectableTypes { get; set; }
 
 		private static IEditUrlManager ManagementPaths
 		{
@@ -64,7 +71,7 @@ namespace N2.Edit.Web.UI.Controls
 			base.DataBind();
 		}
 
-		protected override void CreateChildControls()
+		protected override void Render(HtmlTextWriter writer)
 		{
 			IContentAdapterProvider adapters = Engine.Resolve<IContentAdapterProvider>();
 
@@ -73,70 +80,7 @@ namespace N2.Edit.Web.UI.Controls
 					.Children((item) => adapters.ResolveAdapter<NodeAdapter>(item).GetChildren(item, Interfaces.Managing))
 					.Build();
 
-			var tree = new N2.Web.Tree(Nodes)
-				.OpenTo(SelectedItem)
-				.Filters(Filter)
-				.LinkProvider(item => BuildLink(adapters.ResolveAdapter<NodeAdapter>(item), item, item.Path == SelectedItem.Path, Target))
-				.ToControl();
-
-			AppendExpanderNodeRecursive(tree, Filter, Target, adapters);
-
-			Controls.Add(tree);
-			
-			base.CreateChildControls();
-		}
-
-		public static void AppendExpanderNodeRecursive(Control tree, ItemFilter filter, string target, IContentAdapterProvider adapters)
-		{
-			TreeNode tn = tree as TreeNode;
-			if (tn != null)
-			{
-				foreach (Control child in tn.Controls)
-				{
-					AppendExpanderNodeRecursive(child, filter, target, adapters);
-				}
-				if (tn.Controls.Count == 0 && adapters.ResolveAdapter<NodeAdapter>(tn.Node).HasChildren(tn.Node, filter))
-				{
-					AppendExpanderNode(tn, target);
-				}
-			}
-		}
-
-		public static void AppendExpanderNode(TreeNode tn, string target)
-		{
-			Li li = new Li();
-			
-			li.Text = "{url:" + ManagementPaths.ResolveResourceUrl("{ManagementUrl}/Content/Navigation/LoadTree.ashx?target=" + target + "&selected=" + HttpUtility.UrlEncode(tn.Node.Path)) + "}";
-
-			tn.UlClass = "ajax";
-			tn.Controls.Add(li);
-		}
-
-		internal static ILinkBuilder BuildLink(NodeAdapter adapter, ContentItem item, bool selected, string target)
-		{
-			INode node = item;
-			string className = node.ClassNames;
-			if (selected)
-				className += "selected ";
-
-			ILinkBuilder builder = Link.To(node)
-				.Target(target)
-				.Class(className)
-				.Href(adapter.GetPreviewUrl(item))
-				.Text("<img src='" + adapter.GetIconUrl(item) + "'/>" + node.Contents)
-				.Attribute("id", item.Path.Replace('/', '_'))
-				.Attribute("title", "#" + item.ID + ": " + N2.Context.Current.Definitions.GetDefinition(item).Title)
-				.Attribute("data-id", item.ID.ToString())
-				.Attribute("data-type", item.GetContentType().Name)
-				.Attribute("data-path", item.Path)
-				.Attribute("data-url", item.Url)
-				.Attribute("data-page", item.IsPage.ToString().ToLower())
-				.Attribute("data-zone", item.ZoneName)
-				.Attribute("data-permission", adapter.GetMaximumPermission(item).ToString());
-
-			builder.Href(adapter.GetPreviewUrl(item));
-
-			return builder;
+			TreeUtility.Write(Nodes, SelectedItem, adapters, Filter, SelectableTypes, SelectableExtensions, excludeRoot: false, target: Target, writer: writer);
 		}
 	}
 }

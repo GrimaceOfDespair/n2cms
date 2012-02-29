@@ -38,8 +38,9 @@ namespace N2.Edit.Tests.LinkTracker
 			item2 = CreateOneItem<N2.Tests.Edit.LinkTracker.Items.TrackableItem>(3, "item2", root);
 
 			var errorHandler = new FakeErrorHandler();
-			linkFactory = new Tracker(persister, null, parser, errorHandler);
-			linkFactory.Start();
+			var monitor = new N2.Plugin.ConnectionMonitor();
+			linkFactory = new Tracker(persister, null, parser, monitor, errorHandler);
+			monitor.SetConnected(Installation.SystemStatusLevel.UpAndRunning);
 		}
 
 		private IItemNotifier CreateNotifier(bool replay)
@@ -154,9 +155,6 @@ namespace N2.Edit.Tests.LinkTracker
 		[Test]
 		public void TracksUrl_ToItemsWithoutId()
 		{
-			((FakeFileSystem)Context.Current.Resolve<IFileSystem>()).PathProvider =
-				new FakePathProvider(((FakeFileSystem)Context.Current.Resolve<IFileSystem>()).BasePath);
-
 			RootDirectory rootDir = CreateOneItem<RootDirectory>(4, "FileSystem", root);
 			((IInjectable<IUrlParser>)rootDir).Set(TestSupport.Setup(persister, new FakeWebContextWrapper(), new Host(null, 1, 1)));
 
