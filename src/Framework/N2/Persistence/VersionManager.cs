@@ -15,12 +15,12 @@ namespace N2.Persistence
 	[Service(typeof(IVersionManager))]
 	public class VersionManager : IVersionManager
 	{
-        readonly IRepository<int, ContentItem> itemRepository;
+        readonly IRepository<ContentItem> itemRepository;
 		readonly IItemFinder finder;
         readonly StateChanger stateChanger;
 		int maximumVersionsPerItem = 100;
 
-		public VersionManager(IRepository<int, ContentItem> itemRepository, IItemFinder finder, StateChanger stateChanger, EditSection config)
+		public VersionManager(IRepository<ContentItem> itemRepository, IItemFinder finder, StateChanger stateChanger, EditSection config)
 		{
 			this.itemRepository = itemRepository;
 			this.finder = finder;
@@ -96,7 +96,7 @@ namespace N2.Persistence
 
                         Replace(currentItem, replacementItem);
 
-						if (replacementItem.State == ContentState.Draft && replacementItem.VersionOf == currentItem)
+						if (replacementItem.State == ContentState.Draft && replacementItem.VersionOf.Value == currentItem)
 							// drafts can be removed once they have been published
 							itemRepository.Delete(replacementItem);
 
@@ -107,7 +107,7 @@ namespace N2.Persistence
                     {
                         Replace(currentItem, replacementItem);
 
-						if (replacementItem.State == ContentState.Draft && replacementItem.VersionOf == currentItem)
+						if (replacementItem.State == ContentState.Draft && replacementItem.VersionOf.Value == currentItem)
 							// drafts can be removed once they have been published
 							itemRepository.Delete(replacementItem);
 
@@ -126,7 +126,7 @@ namespace N2.Persistence
             ((IUpdatable<ContentItem>)currentItem).UpdateFrom(replacementItem);
 
             currentItem.Updated = Utility.CurrentTime();
-            itemRepository.Update(currentItem);
+            itemRepository.SaveOrUpdate(currentItem);
 
             if (ItemReplacedVersion != null)
                 ItemReplacedVersion.Invoke(this, new ItemEventArgs(replacementItem));

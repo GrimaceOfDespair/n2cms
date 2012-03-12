@@ -5,6 +5,7 @@ using System.Web;
 using System.Web.Mvc;
 using System.Web.Routing;
 using N2.Engine;
+using log4net;
 
 namespace N2.Web.Mvc
 {
@@ -13,6 +14,8 @@ namespace N2.Web.Mvc
 	/// </summary>
 	public class ContentRoute : RouteBase
 	{
+		private readonly ILog logger = LogManager.GetLogger(typeof (ContentRoute));
+
 		/// <summary>Used to reference the currently executing content item in the route value dictionary.</summary>
 		public static string ContentItemKey
 		{
@@ -112,8 +115,8 @@ namespace N2.Web.Mvc
 			// fallback to route to controller/action
 			if(routeData == null)
 				routeData = CheckForContentController(httpContext);
-
-			Debug.WriteLine("GetRouteData for '" + path + "' got values: " + (routeData != null ? routeData.Values.ToQueryString() : "(null)"));
+			
+			logger.Debug("GetRouteData for '" + path + "' got values: " + (routeData != null ? routeData.Values.ToQueryString() : "(null)"));
 			return routeData;
 		}
 
@@ -122,8 +125,8 @@ namespace N2.Web.Mvc
 			//On a multi-lingual site with separate domains per language,
 			//the full url (with host) should be passed to UrlParser.ResolvePath():
 			string host = (request.Url.IsDefaultPort) ? request.Url.Host : request.Url.Authority;
-			string hostAndRawUrl = String.Format("{0}://{1}{2}", request.Url.Scheme, host, Url.ToAbsolute(request.AppRelativeCurrentExecutionFilePath));
-			PathData td = engine.UrlParser.ResolvePath(hostAndRawUrl);
+			var url = new Url(request.Url.Scheme, host, request.RawUrl);
+			PathData td = engine.Resolve<RequestPathProvider>().ResolveUrl(url);
 
 			var page = td.CurrentPage;
 
@@ -134,10 +137,10 @@ namespace N2.Web.Mvc
 			if (!string.IsNullOrEmpty(request.QueryString[PathData.PageQueryKey]))
 			{
 				int pageId;
-                if (int.TryParse(request.QueryString[PathData.PageQueryKey], out pageId))
-                {
-                    td.CurrentPage = page = engine.Persister.Get(pageId);
-                }
+				if (int.TryParse(request.QueryString[PathData.PageQueryKey], out pageId))
+				{
+					td.CurrentPage = page = engine.Persister.Get(pageId);
+				}
 			}
 
 			ContentItem part = null;
@@ -182,6 +185,8 @@ namespace N2.Web.Mvc
 
 			if (routeData == null)
 				return null;
+			routeData.Route = this;
+			routeData.RouteHandler = routeHandler;
 
 			var controllerName = Convert.ToString(routeData.Values[ControllerKey]);
 			var actionName = Convert.ToString(routeData.Values[ActionKey]);
@@ -221,8 +226,7 @@ namespace N2.Web.Mvc
 		public override VirtualPathData GetVirtualPath(RequestContext requestContext, RouteValueDictionary values)
 		{
 			ContentItem item;
-
-			Debug.WriteLine("GetVirtualPath for values: " + values.ToQueryString());
+			logger.Debug("GetVirtualPath for values: " + values.ToQueryString());
 
 			values = new RouteValueDictionary(values);
 
@@ -287,8 +291,8 @@ namespace N2.Web.Mvc
 
 		private VirtualPathData ResolveContentActionUrl(RequestContext requestContext, RouteValueDictionary values, ContentItem item)
 		{
-            const string controllerPlaceHolder = "---(CTRL)---";
-            const string areaPlaceHolder = "---(AREA)---";
+			const string controllerPlaceHolder = "---(CTRL)---";
+			const string areaPlaceHolder = "---(AREA)---";
 		
 			values[ControllerKey] = controllerPlaceHolder; // pass a placeholder we'll fill with the content path
 			bool useAreas = innerRoute.DataTokens.ContainsKey("area");

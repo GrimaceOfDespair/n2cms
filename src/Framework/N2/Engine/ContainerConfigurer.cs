@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using N2.Configuration;
 using N2.Web;
+using N2.Edit;
 
 namespace N2.Engine
 {
@@ -11,17 +12,6 @@ namespace N2.Engine
 	/// </summary>
 	public class ContainerConfigurer
 	{
-		/// <summary>
-		/// Known configuration keys used to configure services.
-		/// </summary>
-		public static class ConfigurationKeys
-		{
-			/// <summary>Key used to configure services intended for medium trust.</summary>
-			public const string MediumTrust = "MediumTrust";
-			/// <summary>Key used to configure services intended for full trust.</summary>
-			public const string FullTrust = "FullTrust";
-		}
-
 		public virtual void Configure(IEngine engine, EventBroker broker, ConfigurationManagerWrapper configuration)
 		{
 			configuration.Start();
@@ -36,7 +26,7 @@ namespace N2.Engine
 				RegisterConfiguredComponents(engine.Container, configuration.Sections.Engine);
 			AddComponentInstance(engine.Container, configuration.Sections.Web);
 			if (configuration.Sections.Web != null)
-				InitializeEnvironment(engine.Container, configuration.Sections.Web);
+				InitializeEnvironment(engine.Container, configuration.Sections);
 			AddComponentInstance(engine.Container, configuration.Sections.Database);
 			AddComponentInstance(engine.Container, configuration.Sections.Management);
 
@@ -48,22 +38,21 @@ namespace N2.Engine
 
 			var registrator = engine.Container.Resolve<ServiceRegistrator>();
 			var services = registrator.FindServices();
-			var configurations = GetComponentConfigurations(configuration);
-			services = registrator.FilterServices(services, configurations);
+			var configurationKeys = GetComponentConfigurationKeys(configuration);
+			services = registrator.FilterServices(services, configurationKeys);
 			registrator.RegisterServices(services);
 		}
 
-		protected virtual string[] GetComponentConfigurations(ConfigurationManagerWrapper configuration)
+		protected virtual string[] GetComponentConfigurationKeys(ConfigurationManagerWrapper configuration)
 		{
-			List<string> configurations = new List<string>();
-			string trustConfiguration = (Utility.GetTrustLevel() > System.Web.AspNetHostingPermissionLevel.Medium)
-				? ConfigurationKeys.FullTrust
-				: ConfigurationKeys.MediumTrust;
-			configurations.Add(trustConfiguration);
-			var configured = configuration.Sections.Engine.ComponentConfigurations;
-			configurations.AddRange(configured.AddedElements.Select(e => e.Name));
-			configurations.RemoveAll(c => configured.RemovedElements.Any(e => c == e.Name));
-			return configurations.ToArray();
+			List<string> configurationKeys = new List<string>();
+
+			configuration.Sections.Database.ApplyComponentConfigurationKeys(configurationKeys);
+			configuration.Sections.Management.ApplyComponentConfigurationKeys(configurationKeys);
+			configuration.Sections.Web.ApplyComponentConfigurationKeys(configurationKeys);
+			configuration.Sections.Engine.ApplyComponentConfigurationKeys(configurationKeys);
+			
+			return configurationKeys.ToArray();
 		}
 
 		private void AddComponentInstance(IServiceContainer container, object instance)
@@ -71,25 +60,31 @@ namespace N2.Engine
 			container.AddComponentInstance(instance.GetType().FullName, instance.GetType(), instance);
 		}
 
-		protected virtual void InitializeEnvironment(IServiceContainer container, HostSection hostConfig)
+		protected virtual void InitializeEnvironment(IServiceContainer container, ConfigurationManagerWrapper.ContentSectionTable config)
 		{
-			if (hostConfig != null)
+			if (config.Web != null)
 			{
-				Url.DefaultExtension = hostConfig.Web.Extension;
-				PathData.PageQueryKey = hostConfig.Web.PageQueryKey;
-				PathData.ItemQueryKey = hostConfig.Web.ItemQueryKey;
-				PathData.PartQueryKey = hostConfig.Web.PartQueryKey;
+				Url.DefaultExtension = config.Web.Web.Extension;
+				PathData.PageQueryKey = config.Web.Web.PageQueryKey;
+				PathData.ItemQueryKey = config.Web.Web.ItemQueryKey;
+				PathData.PartQueryKey = config.Web.Web.PartQueryKey;
 
-				if (!hostConfig.Web.IsWeb)
+
+				if (!config.Web.Web.IsWeb)
 					container.AddComponentInstance("n2.webContext.notWeb", typeof(IWebContext), new ThreadContext());
 
-				if (hostConfig.Web.Urls.EnableCaching)
+				if (config.Web.Web.Urls.EnableCaching)
 					container.AddComponent("n2.web.cachingUrlParser", typeof(IUrlParser), typeof(CachingUrlParserDecorator));
 
-				if (hostConfig.MultipleSites)
+				if (config.Web.MultipleSites)
 					container.AddComponent("n2.multipleSitesParser", typeof(IUrlParser), typeof(MultipleSitesParser));
 				else
 					container.AddComponent("n2.urlParser", typeof(IUrlParser), typeof(UrlParser));
+			}
+			if (config.Management != null)
+			{
+				SelectionUtility.SelectedQueryKey = config.Management.Paths.SelectedQueryKey;
+				Url.SetToken("{Selection.SelectedQueryKey}", SelectionUtility.SelectedQueryKey);
 			}
 		}
 

@@ -8,12 +8,14 @@ using System.Web.Hosting;
 using N2.Definitions.Static;
 using N2.Engine;
 using N2.Persistence;
+using log4net;
 
 namespace N2.Definitions.Runtime
 {
 	[Service(typeof(ITemplateProvider))]
 	public class ViewTemplateProvider : ITemplateProvider
 	{
+        private readonly ILog logger = LogManager.GetLogger(typeof(ViewTemplateProvider));
 		IProvider<HttpContextBase> httpContextProvider;
 		IProvider<VirtualPathProvider> vppProvider;
 		ContentActivator activator;
@@ -78,7 +80,10 @@ namespace N2.Definitions.Runtime
 					var cacheDependency = vpp.GetCacheDependency(files.FirstOrDefault(), files, DateTime.UtcNow);
 
 					httpContext.Cache.Remove(cacheKey);
-					httpContext.Cache.Add(cacheKey, definitions, cacheDependency, Cache.NoAbsoluteExpiration, Cache.NoSlidingExpiration, CacheItemPriority.AboveNormal, new CacheItemRemovedCallback(delegate { Debug.WriteLine("Razor template changed"); }));
+					httpContext.Cache.Add(cacheKey, definitions, cacheDependency, Cache.NoAbsoluteExpiration, Cache.NoSlidingExpiration, CacheItemPriority.AboveNormal, new CacheItemRemovedCallback(delegate
+					{
+						logger.Debug("Razor template changed");
+					}));
 					rebuild = false;
 				}
 			}
@@ -89,8 +94,8 @@ namespace N2.Definitions.Runtime
 					td.Definition = d;
 					td.Description = d.Description;
 					td.Name = d.TemplateKey;
-					td.Original = () => null;
-					td.Template = () => activator.CreateInstance(d.ItemType, null, d.TemplateKey);
+					td.OriginalFactory = () => null;
+					td.TemplateFactory = () => activator.CreateInstance(d.ItemType, null, d.TemplateKey);
 					td.TemplateUrl = null;
 					td.Title = d.Title;
 					td.ReplaceDefault = "Index".Equals(d.TemplateKey, StringComparison.InvariantCultureIgnoreCase);
@@ -113,8 +118,8 @@ namespace N2.Definitions.Runtime
 
 			return GetTemplates(item.GetContentType()).Where(t => t.Name == templateKey).Select(t =>
 				{
-					t.Original = t.Template;
-					t.Template = () => item;
+					t.OriginalFactory = t.TemplateFactory;
+					t.TemplateFactory = () => item;
 					return t;
 				}).FirstOrDefault();
 		}

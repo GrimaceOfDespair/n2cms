@@ -75,6 +75,7 @@ namespace N2.Web.UI.WebControls
 		private void RegiserClientScript()
 		{
 			Register.JQuery(Page);
+			Register.JQueryUi(Page);
 			Register.JQueryPlugins(Page);
 			string script = string.Format(DateScriptFormat, 
 				/* {0} */ FirstDayOfWeek,
@@ -115,7 +116,7 @@ jQuery('.datePicker').n2datepicker({{ firstDay:{0}, dateFormat:'{1}', dayNamesMi
 				string datePattern = culture.DateTimeFormat.ShortDatePattern;
 				datePattern = Regex.Replace(datePattern, "M+", "mm");
 				datePattern = Regex.Replace(datePattern, "d+", "dd");
-				datePattern = Regex.Replace(datePattern, "y+", delegate(Match m) { return m.Value.Length < 3 ? "yy" : "yyyy"; });
+				datePattern = Regex.Replace(datePattern, "y+", delegate(Match m) { return m.Value.Length < 3 ? "y" : "yy"; });
 				return datePattern;
 			}
 		}

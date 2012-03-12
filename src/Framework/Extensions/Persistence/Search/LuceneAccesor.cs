@@ -10,17 +10,20 @@ using Lucene.Net.Store;
 using N2.Configuration;
 using N2.Engine;
 using N2.Web;
+using log4net;
 using Directory = Lucene.Net.Store.Directory;
 using Version = Lucene.Net.Util.Version;
+using System.Diagnostics;
 
 namespace N2.Persistence.Search
 {
 	/// <summary>
 	/// Simplifies access to the lucene API.
 	/// </summary>
-	[Service]
+	[Service(Configuration = "lucene")]
 	public class LuceneAccesor : IDisposable
 	{
+		private ILog logger = LogManager.GetLogger(typeof (LuceneAccesor));
 		string indexPath;
 		public long LockTimeout { get; set; }
 		Directory directory;
@@ -33,6 +36,11 @@ namespace N2.Persistence.Search
 			indexPath = Path.Combine(webContext.MapPath(config.Search.IndexPath), "Pages");
 		}
 
+		~LuceneAccesor()
+		{
+			Dispose();
+		}
+
 		public IndexWriter GetWriter()
 		{
 			lock (this)
@@ -43,7 +51,23 @@ namespace N2.Persistence.Search
 
 		protected virtual IndexWriter CreateWriter(Directory d, Analyzer a)
 		{
-			var iw = new IndexWriter(d, a, create: !IndexExists(), mfl: IndexWriter.MaxFieldLength.UNLIMITED);
+			try
+			{
+				return CreateWriterNoTry(d, a);
+			}
+			catch (Lucene.Net.Store.LockObtainFailedException)
+			{
+				logger.Debug("Failed to obtain lock, deleting it and retrying.");
+				ClearLock();
+				return CreateWriterNoTry(d, a);
+			}
+		}
+
+		private IndexWriter CreateWriterNoTry(Directory d, Analyzer a)
+		{
+			var indexExists = IndexExists();
+			logger.Debug("Creating index writer, index exists: " + indexExists);
+			var iw = new IndexWriter(d, a, create: !indexExists, mfl: IndexWriter.MaxFieldLength.UNLIMITED);
 			iw.SetWriteLockTimeout(LockTimeout);
 			return iw;
 		}
@@ -66,6 +90,9 @@ namespace N2.Persistence.Search
 		{
 			lock (this)
 			{
+				if (!System.IO.Directory.Exists(indexPath))
+					System.IO.Directory.CreateDirectory(indexPath);
+				
 				var d = directory ?? (directory = new SimpleFSDirectory(new DirectoryInfo(indexPath), new SimpleFSLockFactory()));
 				return d;
 			}
@@ -113,6 +140,12 @@ namespace N2.Persistence.Search
 		public virtual bool IndexExists()
 		{
 			return System.IO.Directory.Exists(indexPath) && GetDirectory().IndexExists();
+		}
+
+		public virtual void ClearLock()
+		{
+			var d = GetDirectory();
+			d.ClearLock("write.lock"); ;
 		}
 	}
 }

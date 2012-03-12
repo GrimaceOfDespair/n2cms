@@ -1,12 +1,14 @@
 ﻿using System.Configuration;
 using NHibernate.Mapping.ByCode;
+using System.Collections.Generic;
+using System.Data;
 
 namespace N2.Configuration
 {
 	/// <summary>
 	/// Database configuration section for nhibernate database connection.
 	/// </summary>
-	public class DatabaseSection : ConfigurationSectionBase
+	public class DatabaseSection : ContentConfigurationSectionBase
 	{
 		/// <summary>Whether cacheing should be enabled.</summary>
 		[ConfigurationProperty("caching", DefaultValue = false)]
@@ -107,6 +109,30 @@ namespace N2.Configuration
 		{
 			get { return (SearchElement)this["search"]; }
 			set { base["search"] = value; }
+		}
+
+		/// <summary>Database file system configuration.</summary>
+		[ConfigurationProperty("files")]
+		public FilesElement Files
+		{
+			get { return (FilesElement)this["files"]; }
+			set { base["files"] = value; }
+		}
+
+		/// <summary>Database file system configuration.</summary>
+		[ConfigurationProperty("isolation")]
+		public IsolationLevel? Isolation
+		{
+			get { return (IsolationLevel?)this["isolation"]; }
+			set { base["isolation"] = value; }
+		}
+
+		public override void ApplyComponentConfigurationKeys(List<string> configurationKeys)
+		{
+			if (Files.StorageLocation == FileStoreLocation.Database)
+				configurationKeys.Add("dbfs");
+			if (Search.Enabled)
+				configurationKeys.Add("lucene");
 		}
 	}
 }

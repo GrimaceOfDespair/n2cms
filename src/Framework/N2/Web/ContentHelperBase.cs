@@ -77,7 +77,7 @@ namespace N2.Web
 			return new ContentScope(newCurrentItem, this);
 		}
 
-		private void EnsureAuthorized(ContentItem newCurrentItem)
+		protected virtual void EnsureAuthorized(ContentItem newCurrentItem)
 		{
 			if (!IsAuthorized(newCurrentItem))
 				throw new PermissionDeniedException(newCurrentItem);
@@ -121,7 +121,7 @@ namespace N2.Web
 			if (item == null)
 				item = Services.Resolve<IUrlParser>().Parse(itemUrlOrId);
 
-			if (!IsAuthorized(item))
+			if (item == null || !IsAuthorized(item))
 				return null;
 
 			return item;
@@ -138,19 +138,6 @@ namespace N2.Web
 
 			return BeginScope(newCurrentItemUrlOrId);
 		}
-
-		#region class EmptyDisposable
-		class EmptyDisposable : IDisposable
-		{
-			#region IDisposable Members
-
-			public void Dispose()
-			{
-			}
-
-			#endregion
-		}
-		#endregion
 
 		#region class ContentScope
 		class ContentScope : IDisposable

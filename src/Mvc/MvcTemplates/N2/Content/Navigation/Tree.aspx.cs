@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Web;
 using System.Web.UI.HtmlControls;
@@ -8,6 +9,10 @@ using N2.Edit.FileSystem.Items;
 using N2.Engine;
 using N2.Resources;
 using N2.Web;
+using N2.Configuration;
+using N2.Edit;
+using N2.Edit.Workflow;
+using N2.Persistence;
 
 namespace N2.Edit.Navigation
 {
@@ -16,15 +21,17 @@ namespace N2.Edit.Navigation
 		protected HtmlInputHidden inputLocation;
 		protected HtmlInputFile inputFile;
 		protected IFileSystem FS;
+		protected EditSection Config;
 		
 		protected override void OnInit(EventArgs e)
 		{
 			FS = Engine.Resolve<IFileSystem>();
+			Config = Engine.Resolve<ConfigurationManagerWrapper>().Sections.Management;
 			Register.JQueryUi(Page);
 			var selected = Selection.SelectedItem;
 			if (IsPostBack && !string.IsNullOrEmpty(inputFile.PostedFile.FileName))
 			{
-				string uploadFolder = Request["inputLocation"];
+				string uploadFolder = Request[inputLocation.UniqueID];
 				if(!IsAvailable(uploadFolder))
 					throw new N2Exception("Cannot upload to " + Server.HtmlEncode(uploadFolder));
 
@@ -51,10 +58,9 @@ namespace N2.Edit.Navigation
 
 				foreach (string uploadFolder in Engine.EditManager.UploadFolders)
 				{
-					var dd = FS.GetDirectory(uploadFolder);
+					var dd = FS.GetDirectoryOrVirtual(uploadFolder);
 
-					var dir = new Directory(dd, root.Current);
-					dir.Set(FS);
+					var dir = Directory.New(dd, root.Current, Engine.Resolve<IDependencyInjector>());
 					var node = CreateDirectoryNode(FS, dir, root, selectionTrail);
 					root.Children.Add(node);
 				}
@@ -62,6 +68,9 @@ namespace N2.Edit.Navigation
 				AddSiteFilesNodes(root, host.DefaultSite, selectionTrail);
 				foreach (var site in host.Sites)
 				{
+					if (site.StartPageID == host.DefaultSite.StartPageID)
+						continue;
+
 					AddSiteFilesNodes(root, site, selectionTrail);
 				}
 
@@ -79,6 +88,8 @@ namespace N2.Edit.Navigation
 			siteTreeView.SelectableTypes = Request["selectableTypes"];
 			siteTreeView.SelectableExtensions = Request["selectableExtensions"];
 			siteTreeView.DataBind();
+
+			inputLocation.Value = siteTreeView.SelectedItem.Url;
 
 			base.OnInit(e);
 		}
@@ -114,27 +125,28 @@ namespace N2.Edit.Navigation
 			if (string.IsNullOrEmpty(uploadFolder))
 				return false;
 			uploadFolder = Url.ToRelative(uploadFolder);
-			foreach (string availableFolder in Engine.EditManager.UploadFolders)
+			foreach (string availableFolder in Engine.EditManager.UploadFolders
+				.Union(Engine.Host.Sites.SelectMany(s => s.UploadFolders)))
 			{
 				if (uploadFolder.StartsWith(Url.ToRelative(availableFolder), StringComparison.InvariantCultureIgnoreCase))
 					return true;
 			}
+
 			return false;
 		}
 
 		private void AddSiteFilesNodes(HierarchyNode<ContentItem> parent, Site site, List<ContentItem> selectionTrail)
 		{
-			var siteNode = Engine.Persister.Get(site.StartPageID);
+			var startPage = Engine.Persister.Get(site.StartPageID);
+			var sizes = Engine.Resolve<ImageSizeCache>();
 
 			HierarchyNode<ContentItem> node = null;
-			foreach (DirectoryData dd in Engine.Resolve<IContentAdapterProvider>()
-				.ResolveAdapter<NodeAdapter>(siteNode)
-				.GetUploadDirectories(site))
+			foreach(var dir in Engine.GetContentAdapter<NodeAdapter>(startPage)
+				.GetChildren(startPage, Interfaces.Managing)
+				.OfType<Directory>())
 			{
-				if(node == null)
-					node = new HierarchyNode<ContentItem>(siteNode);
-				var dir = new Directory(dd, parent.Current);
-				dir.Set(FS);
+				if (node == null)
+					node = new HierarchyNode<ContentItem>(startPage);
 				var directoryNode = CreateDirectoryNode(FS, dir, node, selectionTrail);
 				node.Children.Add(directoryNode);
 			}

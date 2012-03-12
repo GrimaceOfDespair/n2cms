@@ -1,4 +1,5 @@
 ﻿using System;
+using NHibernate;
 
 namespace N2.Persistence.NH
 {
@@ -10,9 +11,17 @@ namespace N2.Persistence.NH
 	{
         /// <summary>Returns an already opened session or creates and opens a new one and puts it in the current request.</summary>
         /// <returns>A NHibernate session.</returns>
-        SessionContext OpenSession { get; }
+		SessionContext OpenSession { get; }
+
+		/// <summary>Returns an already opened session or creates and opens a new one and puts it in the current request.</summary>
+		/// <returns>A NHibernate session.</returns>
+		ISessionFactory SessionFactory { get; }
 
         /// <summary>Persists changes to disk.</summary>
 		void Flush();
+
+		/// <summary>Begins a transaction.</summary>
+		/// <returns>A disposable transaction wrapper. Call Commit to commit the transaction.</returns>
+		ITransaction BeginTransaction();
 	}
 }

@@ -6,7 +6,7 @@
 		var from = dragMemory;
 		parent.preview.location = "../paste.aspx?action=" + action
 								+ "&memory=" + encodeURIComponent(from)
-								+ "&selected=" + encodeURIComponent(to);
+								+ "&" + n2SelectedQueryKey + "=" + encodeURIComponent(to);
 	};
 	var onStart = function (e, ui) {
 		dragMemory = $(this).attr("data-path");
@@ -44,6 +44,9 @@
 		handler.call($a[0], e);
 
 		document.body.className = document.body.className.replace(/\w+Selected ?/g, $a.attr("data-type") + "Selected");
+
+		jQuery(".focused").removeClass("focused");
+		$a.addClass("focused").focus();
 	});
 
 	window.onNavigating = function (options) {
@@ -69,12 +72,28 @@
 		right: function (e, ctx) {
 			ctx.focused().siblings(".folder-close > .toggler").click();
 		},
-		esc: function () { $("#contextMenu").n2hide(); },
-		del: function () { $("#contextMenu a.delete").n2trigger(); },
-		c: function () { $("#contextMenu a.copy").n2trigger(); },
-		n: function () { $("#contextMenu a.new").n2trigger(); },
-		v: function () { $("#contextMenu a.paste").n2trigger(); },
-		x: function () { $("#contextMenu a.move").n2trigger(); },
-		enter: function () { ctx.focused().click(); }
+		esc: function (e) {
+			if (e.altKey || e.ctrlKey) return;
+			$("#contextMenu").n2hide();
+		},
+		del: function (e) {
+			if (e.altKey || e.ctrlKey) return;
+			$("#contextMenu a.delete").n2trigger();
+		},
+		c: function () {
+			$("#contextMenu a.copy").n2trigger();
+		},
+		n: function () {
+			$("#contextMenu a.new").n2trigger();
+		},
+		v: function () {
+			$("#contextMenu a.paste").n2trigger();
+		},
+		x: function () {
+			$("#contextMenu a.move").n2trigger();
+		},
+		enter: function () {
+			ctx.focused().click();
+		}
 	}, ".selected");
 });

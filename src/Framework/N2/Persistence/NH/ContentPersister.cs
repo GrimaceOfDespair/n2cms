@@ -28,17 +28,14 @@ namespace N2.Persistence.NH
 	[Service(typeof(IPersister))]
 	public class ContentPersister : IPersister
 	{
-		private readonly IRepository<int, ContentItem> itemRepository;
-		private readonly INHRepository<int, ContentDetail> linkRepository;
-		private readonly IItemFinder finder;
+		private readonly IRepository<ContentItem> itemRepository;
+		private readonly IRepository<ContentDetail> linkRepository;
 
 		/// <summary>Creates a new instance of the DefaultPersistenceManager.</summary>
-		public ContentPersister(IRepository<int, ContentItem> itemRepository, INHRepository<int, ContentDetail> linkRepository,
-		                        IItemFinder finder)
+		public ContentPersister(IRepository<ContentItem> itemRepository, IRepository<ContentDetail> linkRepository)
 		{
 			this.itemRepository = itemRepository;
 			this.linkRepository = linkRepository;
-			this.finder = finder;
 		}
 
 		#region Load, Save, & Delete Methods
@@ -48,6 +45,8 @@ namespace N2.Persistence.NH
 		/// <returns>The item if one with a matching id was found, otherwise null.</returns>
 		public virtual ContentItem Get(int id)
 		{
+			if (id == 0) return null;
+
             ContentItem item = itemRepository.Get(id);
             if (ItemLoaded != null)
             {
@@ -82,7 +81,7 @@ namespace N2.Persistence.NH
 			{
 				using (ITransaction transaction = itemRepository.BeginTransaction())
 				{
-					if (item.VersionOf == null)
+					if (!item.VersionOf.HasValue)
 						item.Updated = Utility.CurrentTime();
 					if (string.IsNullOrEmpty(item.Name))
 						item.Name = null;
@@ -94,7 +93,7 @@ namespace N2.Persistence.NH
 					if (string.IsNullOrEmpty(item.Name))
 					{
 						item.Name = item.ID.ToString();
-						itemRepository.Save(item);
+						itemRepository.SaveOrUpdate(item);
 					}
 
 					transaction.Commit();
@@ -150,7 +149,7 @@ namespace N2.Persistence.NH
 		{
 			string itemTrail = Utility.GetTrail(itemNoMore);
 			var inboundLinks = Find.EnumerateChildren(itemNoMore, true, false)
-				.SelectMany(i => linkRepository.FindAll(Expression.Eq("LinkedItem", i), Expression.Eq("ValueTypeKey", ContentDetail.TypeKeys.LinkType)))
+				.SelectMany(i => linkRepository.Find(new Parameter("LinkedItem", i), new Parameter("ValueTypeKey", ContentDetail.TypeKeys.LinkType)))
 				.Where(l => !Utility.GetTrail(l.EnclosingItem).StartsWith(itemTrail))
 				.ToList();
 
@@ -190,16 +189,16 @@ namespace N2.Persistence.NH
 
 		private void DeletePreviousVersions(ContentItem itemNoMore)
 		{
-			var previousVersions = finder.Where.VersionOf.Eq(itemNoMore).Select();
-			if (previousVersions.Count == 0)
-				return;
+			var previousVersions = itemRepository.Find("VersionOf.ID", itemNoMore.ID);
 
-			TraceInformation("ContentPersister.DeletePreviousVersions " + previousVersions.Count + " of " + itemNoMore);
-
-			foreach (ContentItem previousVersion in previousVersions)
+			int count = 0;
+			foreach (ContentItem version in previousVersions)
 			{
-				itemRepository.Delete(previousVersion);
+				itemRepository.Delete(version);
+				count++;
 			}
+
+			TraceInformation("ContentPersister.DeletePreviousVersions " + count + " of " + itemNoMore);
 		}
 
 		#endregion
@@ -323,14 +322,14 @@ namespace N2.Persistence.NH
         {
             itemRepository.Flush();
         }
-        public IRepository<int, ContentItem> Repository
+        public IRepository<ContentItem> Repository
         {
             get { return this.itemRepository; }
         }
         protected virtual T Invoke<T>(EventHandler<T> handler, T args)
             where T : ItemEventArgs
         {
-            if (handler != null && args.AffectedItem.VersionOf == null)
+			if (handler != null && !args.AffectedItem.VersionOf.HasValue)
                 handler.Invoke(this, args);
             return args;
         }

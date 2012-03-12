@@ -15,6 +15,11 @@ namespace N2.Web.Mvc.Html
 			return new ResourcesHelper { Writer = html.ViewContext.Writer, ViewData = html.ViewData };
 		}
 
+		public static ResourcesHelper Resources(this HtmlHelper html, TextWriter writer)
+		{
+			return new ResourcesHelper { Writer = writer, ViewData = html.ViewData };
+		}
+
 		public static ResourcesHelper JQuery(this ResourcesHelper registrator)
 		{
 			return registrator.JavaScript(N2.Resources.Register.JQueryPath());
@@ -23,18 +28,23 @@ namespace N2.Web.Mvc.Html
 		public static ResourcesHelper JQueryPlugins(this ResourcesHelper registrator)
 		{
 			return registrator.JQuery()
-				.JavaScript("{ManagementUrl}/Resources/Js/plugins.ashx?v=" + typeof(Register).Assembly.GetName().Version);
+				.JavaScript("{ManagementUrl}/Resources/Js/plugins.ashx?v=" + Register.JQueryVersion);
 		}
 
 		public static ResourcesHelper JQueryUi(this ResourcesHelper registrator)
 		{
 			return registrator.JQuery()
-				.JavaScript("{ManagementUrl}/Resources/Js/jquery.ui.ashx?v=" + typeof(Register).Assembly.GetName().Version);
+				.JavaScript("{ManagementUrl}/Resources/Js/jquery.ui.ashx?v=" + Register.JQueryVersion);
 		}
 
 		public static ResourcesHelper TinyMCE(this ResourcesHelper registrator)
 		{
 			return registrator.JavaScript("{ManagementUrl}/Resources/tiny_mce/tiny_mce.js");
+		}
+
+		public static ResourcesHelper Constnats(this ResourcesHelper registrator)
+		{
+			return registrator.JavaScript(Register.SelectedQueryKeyRegistrationScript(), ScriptOptions.ScriptTags);
 		}
 
 		public class ResourcesHelper

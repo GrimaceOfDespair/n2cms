@@ -34,6 +34,7 @@ using N2.Persistence;
 using N2.Persistence.Proxying;
 using N2.Web;
 using N2.Persistence.Search;
+using N2.Persistence.Sources;
 
 namespace N2
 {
@@ -58,20 +59,22 @@ namespace N2
     /// you should manually change the discriminator in the database or set the 
     /// name of the definition attribute, e.g. [Definition("Title", "OldClassName")]
     /// </remarks>
-	[Serializable, DebuggerDisplay("{Name, nq}#{ID} [{TypeName, nq}]")]
+	[Serializable, DebuggerDisplay("{TypeName, nq}: {Name, nq}#{ID}")]
 	[DynamicTemplate]
 	[SortChildren(SortBy.CurrentOrder)]
 	[SearchableType]
-	public abstract class ContentItem : IComparable, 
-		IComparable<ContentItem>, 
+#pragma warning disable 612, 618
+	public abstract class ContentItem : INode,
+#pragma warning restore 612, 618
+		IComparable, 
+		IComparable<ContentItem>,
 		ICloneable,
-		IInjectable<IUrlParser>, 
-		INode, 
-		IUpdatable<ContentItem>, 
+		IInjectable<IUrlParser>,
+		IUpdatable<ContentItem>,
 		IInterceptableType,
 		INameable,
 		IPlaceable
-    {
+	{
         #region Private Fields
         private int id;
         private string title;
@@ -87,7 +90,7 @@ namespace N2
         private int sortOrder;
 		private string url = null;
         private bool visible = true;
-		private ContentItem versionOf = null;
+		private ContentRelation versionOf;
 		private string savedBy;
 		private IList<Security.AuthorizedRole> authorizedRoles = null;
 		private IContentItemList<ContentItem> children = new ItemList<ContentItem>();
@@ -99,6 +102,7 @@ namespace N2
         private int versionIndex;
         private ContentState state = ContentState.None;
 		private N2.Security.Permission alteredPermissions = N2.Security.Permission.None;
+		private int? hashCode;
 		#endregion
 
         #region Constructor
@@ -228,10 +232,15 @@ namespace N2
 		}
 
 		/// <summary>Gets or sets the published version of this item. If this value is not null then this item is a previous version of the item specified by VersionOf.</summary>
-		public virtual ContentItem VersionOf
+		public virtual ContentRelation VersionOf
 		{
-			get { return versionOf; }
-			set { versionOf = value; }
+			get { return versionOf ?? (versionOf = new ContentRelation()); }
+			set 
+			{
+				//if (versionOf != null && value != null)
+				//    value.ValueAccessor = versionOf.ValueAccessor;
+				versionOf = value;
+			}
 		}
 
 		/// <summary>Gets or sets the name of the identity who saved this item.</summary>
@@ -449,6 +458,38 @@ namespace N2
 				}     
             }
         }
+
+		internal static class KnownProperties
+		{
+			public const string AlteredPermissions = "AlteredPermissions";
+			public const string AncestralTrail = "AncestralTrail";
+			public const string Created = "Created";
+			public const string Expires = "Expires";
+			public const string Extension = "Extension";
+			public const string IconUrl = "IconUrl";
+			public const string ID = "ID";
+			public const string IsPage = "IsPage";
+			public const string Name = "Name";
+			public const string Parent = "Parent";
+			public const string Path = "Path";
+			public const string Published = "Published";
+			public const string SavedBy = "SavedBy";
+			public const string SortOrder = "SortOrder";
+			public const string State = "State";
+			public const string TemplateKey = "TemplateKey";
+			public const string TemplateUrl = "TemplateUrl";
+			public const string TranslationKey = "TranslationKey";
+			public const string Title = "Title";
+			public const string Updated = "Updated";
+			public const string Url = "Url";
+			public const string VersionIndex = "VersionIndex";
+			public const string Visible = "Visible";
+			public const string ZoneName = "ZoneName";
+
+			public static HashSet<string> WritablePartProperties = new HashSet<string>(new[] { AlteredPermissions, Created, Expires, Name, Parent, Published, SavedBy, SortOrder, State, TemplateKey, TranslationKey, Title, Updated, Visible, ZoneName });
+			public static HashSet<string> WritableProperties = new HashSet<string>(new[] { AlteredPermissions, AncestralTrail, Created, Expires, ID, Name, Parent, Published, SavedBy, SortOrder, State, TemplateKey, TranslationKey, Title, Updated, VersionIndex, Visible, ZoneName });
+			public static HashSet<string> ReadonlyProperties = new HashSet<string>(new [] { Extension, IconUrl, IsPage, Path, TemplateUrl, Url });
+		}
         #endregion
 
 		#region GetDetail & SetDetail<T> Methods
@@ -699,7 +740,7 @@ namespace N2
 		/// <returns>A list of filtered child items.</returns>
 		public virtual ItemList GetChildren(ItemFilter filter)
 		{
-			IEnumerable<ContentItem> items = VersionOf == null ? Children : VersionOf.Children;
+			IEnumerable<ContentItem> items = !VersionOf.HasValue ? Children : VersionOf.Children;
 			return new ItemList(items, filter);
 		}
 
@@ -710,7 +751,7 @@ namespace N2
 		/// <returns>A list of filtered child items.</returns>
 		public virtual ItemList GetChildren(int skip, int take, ItemFilter filter)
 		{
-			var items = VersionOf == null ? Children : VersionOf.Children;
+			var items = !VersionOf.HasValue ? Children : VersionOf.Children;
 			if (skip != 0 || take != int.MaxValue)
 				return new ItemList(items.FindRange(skip, take), filter);
 
@@ -852,7 +893,7 @@ namespace N2
 		{
 			get
 			{
-				if (VersionOf != null)
+				if (VersionOf.HasValue)
 					return VersionOf.Path;
 
 				string path = "/";
@@ -867,11 +908,13 @@ namespace N2
 			}
 		}
 
+		[Obsolete]
 		string INode.PreviewUrl
 		{
 			get { return Url; }
 		}
 
+		[Obsolete]
 		string INode.ClassNames
 		{
 			get
@@ -912,7 +955,7 @@ namespace N2
 				return true;
 
 			// Iterate allowed roles to find an allowed role
-			foreach (Security.Authorization auth in AuthorizedRoles)
+			foreach (Security.AuthorizedRole auth in AuthorizedRoles)
 			{
 				if (auth.IsAuthorized(user))
 					return true;
@@ -952,7 +995,6 @@ namespace N2
 			//TODO: add id==0 && name+parent
 		}
 
-		int? hashCode;
 		/// <summary>Gets a hash code based on the ID.</summary>
 		/// <returns>A hash code.</returns>
 		[DebuggerStepThrough]

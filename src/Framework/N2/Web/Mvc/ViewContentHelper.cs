@@ -23,6 +23,12 @@ namespace N2.Web.Mvc
 			this.html = html;
 		}
 
+		public ViewContentHelper(HtmlHelper html, IEngine engine, Func<PathData> pathGetter)
+			: base (engine, pathGetter)
+		{
+			this.html = html;
+		}
+
 		public HtmlHelper Html
 		{
 			get { return html; }
@@ -40,7 +46,9 @@ namespace N2.Web.Mvc
 
 		public bool HasValue(string detailName)
 		{
-			return Current.Item[detailName] != null && !("".Equals(Current.Item[detailName]));
+			return Current.Item != null 
+				&& Current.Item[detailName] != null 
+				&& !("".Equals(Current.Item[detailName]));
 		}
 	}
 

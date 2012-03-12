@@ -70,7 +70,7 @@ namespace N2.Edit.Workflow
 					return Compose("Publish", Authorize(Permission.Publish), validate, updateObject, moveToPosition, saveActiveContent);
                 
                 // Editing
-				if (context.Content.VersionOf == null)
+				if (!context.Content.VersionOf.HasValue)
 				{
 					if(context.Content.ID == 0)
 						return Compose("Publish", Authorize(Permission.Publish), validate, updateObject, incrementVersionIndex, publishedState, moveToPosition/*, publishedDate*/, save);
@@ -88,11 +88,25 @@ namespace N2.Edit.Workflow
                 // has never been published before (remove old version)
 				return Compose("Publish", Authorize(Permission.Publish), validate, updateObject,/* makeVersionOfMaster,*/ replaceMaster, delete, useMaster, publishedState, moveToPosition/*, publishedDate*/, save);
             }
-            else if (context.Interface == Interfaces.Viewing && context.Content.VersionOf != null)
+            else if (context.Interface == Interfaces.Viewing)
             {
                 // Viewing
+                if (!context.Content.VersionOf.HasValue)
+                {
+                    if (context.Content.ID == 0)
+                        return Compose("Publish", Authorize(Permission.Publish), validate, updateObject, incrementVersionIndex, publishedState, moveToPosition/*, publishedDate*/, save);
+
+                    if (context.Content.State == ContentState.Draft && context.Content.Published.HasValue == false)
+                        return Compose("Publish", Authorize(Permission.Publish), validate, makeVersion, updateObject, incrementVersionIndex, publishedState, moveToPosition, publishedDate, save);
+
+                    return Compose("Publish", Authorize(Permission.Publish), validate, makeVersion, updateObject, incrementVersionIndex, publishedState, moveToPosition/*, publishedDate*/, save);
+                }
+                
                 if (context.Content.State == ContentState.Unpublished)
 					return Compose("Re-Publish", Authorize(Permission.Publish),/* makeVersionOfMaster,*/ replaceMaster, useMaster, incrementVersionIndex, publishedState, moveToPosition/*, publishedDate*/, save);
+
+				if (context.Content.State == ContentState.Draft)
+					return Compose("Re-Publish", Authorize(Permission.Publish),/* makeVersionOfMaster,*/ replaceMaster, useMaster, incrementVersionIndex, publishedState, moveToPosition, publishedDate, save);
 
 				return Compose("Publish", Authorize(Permission.Publish),/* makeVersionOfMaster,*/ replaceMaster, delete, useMaster, publishedState, moveToPosition/*, publishedDate*/, save);
             }
@@ -112,7 +126,7 @@ namespace N2.Edit.Workflow
 				// handles it's own persistence
 				return Compose("Save changes", Authorize(Permission.Write), validate, saveActiveContent);
 
-			if (context.Content.ID != 0 && context.Content.VersionOf == null)
+			if (context.Content.ID != 0 && !context.Content.VersionOf.HasValue)
 				// update a master version
 				return Compose("Save changes", Authorize(Permission.Write), validate, useNewVersion, updateObject, incrementVersionIndex, draftState, unpublishedDate, save);
 

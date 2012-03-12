@@ -133,27 +133,27 @@ var initn2context = function (w) {
 			this.selectedPath = options.path;
 			this.selectedUrl = options.previewUrl;
 
-			if (typeof (toolbarPlugIns) == "undefined")
-				return;
-			for (var i = 0; i < toolbarPlugIns.length; i++) {
-				var a = w.document.getElementById(toolbarPlugIns[i].linkId);
-				var href = toolbarPlugIns[i].urlFormat;
-				var formats = { url: options.previewUrl, selected: options.path, memory: memory, action: action };
+			var formats = { url: options.previewUrl, selected: options.path, memory: memory, action: action };
+			$("a.templatedurl").each(function () {
+				var href = $(this).attr("data-url-template") || a.href;
 				for (var key in formats) {
 					var format = "{" + key + "}";
 					if (href.indexOf(format) >= 0 && formats[key] == "null") {
 						href = "#stop";
-						$(a).addClass("disabled");
+						$(this).addClass("disabled");
 						break;
 					}
-					else $(a).removeClass("disabled");
+					else $(this).removeClass("disabled");
 
 					href = href.replace(format, formats[key]);
 				}
-				a.href = href;
-			}
+				//console.log(a, a.href, " -> ", href);
+				this.href = href;
+			});
 
-			w.document.getElementById("permission").className = options.permission;
+			$(document).ready(function () {
+				w.document.getElementById("permission").className = options.permission;
+			});
 		},
 
 		append: function (url, data) {
@@ -228,5 +228,6 @@ window.n2 = initn2context(window);
 window.n2.layout = {
 	init: function () {
 		$("#splitter-container,.pane").layout({ useStateCookie: true, cookie: { expires: 365 }, defaults: { spacing_closed: 12 }, north: { resizable: false }, west: { minWidth: 250 }, center: { minWidth: 250} });
+		$("#permission").css({ position: "" }); // restore north pane style so drop-downs arn't hidden
 	}
 }

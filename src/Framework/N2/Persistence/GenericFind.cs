@@ -23,7 +23,7 @@ namespace N2.Persistence
 		/// <summary>Gets the site's root items.</summary>
 		public static TRoot RootItem
 		{
-			get { return (TRoot)Context.Current.Persister.Repository.Load(Context.Current.Resolve<IHost>().CurrentSite.RootItemID); }
+			get { return (TRoot)Context.Current.Persister.Repository.Get(Context.Current.Resolve<IHost>().CurrentSite.RootItemID); }
 		}
 
 		/// <summary>Gets the currently displayed page (based on the query string).</summary>
@@ -78,7 +78,7 @@ namespace N2.Persistence
 			if (typed != null)
 				return typed;
 
-			if (item.VersionOf != null)
+			if (item.VersionOf.HasValue)
 				return Closest<T>(item.VersionOf);
 
 			return Closest<T>(item.Parent);
@@ -120,7 +120,7 @@ namespace N2.Persistence
 		public static IEnumerable<ContentItem> EnumerateParents(ContentItem initialItem, ContentItem lastAncestor, bool includeSelf)
 		{
 			if (initialItem == null) yield break;
-            if (initialItem.VersionOf != null) initialItem = initialItem.VersionOf;
+			if (initialItem.VersionOf.HasValue) initialItem = initialItem.VersionOf;
 
 			ContentItem item;
 			if(includeSelf)
@@ -251,7 +251,7 @@ namespace N2.Persistence
 		public static IEnumerable<ContentItem> EnumerateChildren(ContentItem item, bool includeSlef, bool useMasterVersion)
 		{
 			if (item == null) yield break;
-			if (useMasterVersion && item.VersionOf != null) item = item.VersionOf;
+			if (useMasterVersion && item.VersionOf.HasValue) item = item.VersionOf;
 
 			if(includeSlef)
 				yield return item;

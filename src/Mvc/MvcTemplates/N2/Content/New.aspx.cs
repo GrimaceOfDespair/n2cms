@@ -31,13 +31,13 @@ using N2.Web.UI.WebControls;
 
 namespace N2.Edit
 {
-	[NavigationLinkPlugin("New", "new", "{ManagementUrl}/Content/New.aspx?selected={selected}", Targets.Preview, "{ManagementUrl}/Resources/icons/add.png", 10,
+	[NavigationLinkPlugin("New", "new", "{ManagementUrl}/Content/New.aspx?{Selection.SelectedQueryKey}={selected}", Targets.Preview, "{ManagementUrl}/Resources/icons/add.png", 10,
 		GlobalResourceClassName = "Navigation",
 		RequiredPermission = Permission.Write)]
-	[ToolbarPlugin("NEW", "new", "{ManagementUrl}/Content/New.aspx?selected={selected}", ToolbarArea.Operations, Targets.Preview, "{ManagementUrl}/Resources/icons/add.png", 40, ToolTip = "new",
+	[ToolbarPlugin("NEW", "new", "{ManagementUrl}/Content/New.aspx?{Selection.SelectedQueryKey}={selected}", ToolbarArea.Operations, Targets.Preview, "{ManagementUrl}/Resources/icons/add.png", 40, ToolTip = "new",
 		GlobalResourceClassName = "Toolbar",
 		RequiredPermission = Permission.Write)]
-	[ControlPanelLink("cpNew", "{ManagementUrl}/Resources/icons/add.png", "{ManagementUrl}/Content/New.aspx?selected={Selected.Path}", "New item one level down from this page", 40, ControlPanelState.Visible,
+	[ControlPanelLink("cpNew", "{ManagementUrl}/Resources/icons/add.png", "{ManagementUrl}/Content/New.aspx?{Selection.SelectedQueryKey}={Selected.Path}", "New item one level down from this page", 40, ControlPanelState.Visible,
 		RequiredPermission = Permission.Write)]
 	public partial class New : Web.EditPage
     {
@@ -87,19 +87,19 @@ namespace N2.Edit
 			{
 				LoadZones();
 			}
-			ZoneName = rblZone.SelectedValue;
+			ZoneName = GetSelectedZone();
         }
 
 		protected void rblPosition_OnSelectedIndexChanged(object sender, EventArgs args)
 		{
 			ParentItemDefinition = Definitions.GetDefinition(ActualItem);
 			LoadZones();
-			ZoneName = rblZone.SelectedValue;
+			ZoneName = GetSelectedZone();
 		}
 
 		protected void rblZone_OnSelectedIndexChanged(object sender, EventArgs args)
 		{
-			ZoneName = rblZone.SelectedValue;
+			ZoneName = GetSelectedZone();
 		}
 
 		protected override void OnPreRender(EventArgs e)
@@ -261,6 +261,11 @@ namespace N2.Edit
 		protected string GetLocalizedString(string classKey, string key)
 		{
 			return Utility.GetGlobalResourceString(classKey, key);
+		}
+
+		private string GetSelectedZone()
+		{
+			return string.IsNullOrEmpty(rblZone.SelectedValue) ? null : rblZone.SelectedValue;
 		}
     }
     

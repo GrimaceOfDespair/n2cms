@@ -23,6 +23,14 @@ namespace N2.Web
 		static string defaultExtension = ".aspx";
 		static string defaultDocument = "Default.aspx";
 
+		private static readonly HashSet<string> contentParameters = new HashSet<string>
+																		{
+																			PathData.ItemQueryKey,
+																			PathData.PageQueryKey,
+																			"action",
+																			"arguments"
+																		};
+
 		static Dictionary<string, string> replacements = new Dictionary<string, string> { { ManagementUrlToken, "~/N2" }, { ThemesUrlToken, "~/App_Themes/" } };
 
 		string scheme;
@@ -96,6 +104,9 @@ namespace N2.Web
 		{
 			scheme = null;
 			authority = null;
+			if (url.StartsWith("~"))
+				url = ToAbsolute(url);
+
 			if (queryIndex >= 0)
 				path = url.Substring(0, queryIndex);
 			else if (hashIndex >= 0)
@@ -362,6 +373,14 @@ namespace N2.Web
 
 		public Url AppendQuery(string key, string value)
 		{
+			return AppendQuery(key, value, true);
+		}
+
+		public Url AppendQuery(string key, string value, bool unlessNull)
+		{
+			if (unlessNull && value == null)
+				return this;
+				 
 			return AppendQuery(key + "=" + HttpUtility.UrlEncode(value));
 		}
 
@@ -665,6 +684,9 @@ namespace N2.Web
 			{
 				if (applicationPath == null)
 				{
+					if(HttpContext.Current == null)
+						return "/";
+
 					try
 					{
 						applicationPath = VirtualPathUtility.ToAbsolute("~/");
@@ -679,23 +701,23 @@ namespace N2.Web
 			set { applicationPath = value; }
 		}
 
-	    private static string fallbackServerUrl;
+		private static string fallbackServerUrl;
 		/// <summary>The address to the server where the site is running.</summary>
 		public static string ServerUrl
 		{
 			get
 			{
-                // we need get the server url of current request, it can't be cached in multiple-sites environment 
-			    var webContext = Context.Current.RequestContext;
-                if (webContext == null)
-                    return null;
-                if(webContext.IsWeb)
-                {
-                    if(fallbackServerUrl == null)
-                        fallbackServerUrl = webContext.Url.HostUrl;
-                    return webContext.Url.HostUrl;
-                }
-                return fallbackServerUrl; // fallback for ThreadContext
+				// we need get the server url of current request, it can't be cached in multiple-sites environment 
+				var webContext = Context.Current.RequestContext;
+				if (webContext == null)
+					return null;
+				if(webContext.IsWeb)
+				{
+					if(fallbackServerUrl == null)
+						fallbackServerUrl = webContext.Url.HostUrl;
+					return webContext.Url.HostUrl;
+				}
+				return fallbackServerUrl; // fallback for ThreadContext
 			}
 		}
 
@@ -914,6 +936,25 @@ namespace N2.Web
 		public Url ResolveTokens()
 		{
 			return new Url(ResolveTokens(ToString()));
+		}
+
+		/// <summary>
+		/// Removes anything from the url that doesn't affect the content to be returned.
+		/// </summary>
+		/// <param name="url"></param>
+		/// <returns>Normalized url.</returns>
+		public Url GetNormalizedContentUrl()
+		{
+			var clonedUrl = new Url(this);
+
+			// Normalize the url remove parameters we don't care about
+			foreach (var queryParameter in GetQueries())
+			{
+				if (!contentParameters.Contains(queryParameter.Key.ToLowerInvariant()))
+					clonedUrl = RemoveQuery(queryParameter.Key);
+			}
+
+			return clonedUrl;
 		}
 	}
 }

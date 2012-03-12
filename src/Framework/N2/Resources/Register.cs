@@ -4,6 +4,7 @@ using System.Web.UI;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
 using N2.Web;
+using N2.Edit;
 
 namespace N2.Resources
 {
@@ -13,7 +14,7 @@ namespace N2.Resources
 	public static class Register
 	{
 		public static bool Debug { get; set; }
-		public const string JQueryVersion = "1.6.1";
+		public const string JQueryVersion = "1.7";
 
 		#region page StyleSheet
 
@@ -56,7 +57,7 @@ namespace N2.Resources
 				link.Attributes["rel"] = "stylesheet";
 				holder.Controls.Add(link);
 
-				page.Items[resourceUrl] = null;
+				page.Items[resourceUrl] = true;
 			}
 		}
 
@@ -354,12 +355,12 @@ namespace N2.Resources
 
 		public static string JQueryPlugins(IDictionary<string, object> stateCollection)
 		{
-			return JQuery(stateCollection) + JavaScript(stateCollection, "{ManagementUrl}/Resources/Js/plugins.ashx?v=" + typeof(Register).Assembly.GetName().Version);
+			return JQuery(stateCollection) + JavaScript(stateCollection, "{ManagementUrl}/Resources/Js/plugins.ashx?v=" + JQueryVersion);
 		}
 
 		public static string JQueryUi(IDictionary<string, object> stateCollection)
 		{
-			return JQuery(stateCollection) + JavaScript(stateCollection, "{ManagementUrl}/Resources/Js/jquery.ui.ashx?v=" + typeof(Register).Assembly.GetName().Version);
+			return JQuery(stateCollection) + JavaScript(stateCollection, "{ManagementUrl}/Resources/Js/jquery.ui.ashx?v=" + JQueryVersion);
 		}
 
 		public static string TinyMCE(IDictionary<string, object> stateCollection)
@@ -377,5 +378,10 @@ namespace N2.Resources
 			return string.Format("<link href=\"{0}\" rel=\"stylesheet\" type=\"text/css\" />", Url.ResolveTokens(resourceUrl));
 		}
 		#endregion
+
+		internal static string SelectedQueryKeyRegistrationScript()
+		{
+			return "n2SelectedQueryKey = '" + SelectionUtility.SelectedQueryKey + "';";
+		}
 	}
 }

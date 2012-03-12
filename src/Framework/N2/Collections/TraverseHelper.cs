@@ -64,7 +64,7 @@ namespace N2.Collections
 		public IEnumerable<ILanguage> Translations(ContentItem item)
 		{
 			TryMasterVersion(ref item);
-			var lg = engine.Resolve<ILanguageGateway>();
+			var lg = engine.Resolve<LanguageGatewaySelector>().GetLanguageGateway(item);
 			return lg.FindTranslations(item).Select(i => lg.GetLanguage(i));
 		}
 
@@ -350,7 +350,7 @@ namespace N2.Collections
 			if (typed != null)
 				return typed;
 
-			if (item.VersionOf != null)
+			if (item.VersionOf.HasValue)
 				return Closest<T>(item.VersionOf);
 
 			return Closest<T>(item.Parent);
@@ -380,7 +380,7 @@ namespace N2.Collections
 
 		private static bool TryMasterVersion(ref ContentItem item)
 		{
-			if (item != null && item.VersionOf != null)
+			if (item != null && item.VersionOf.HasValue)
 			{
 				item = item.VersionOf;
 				return true;

@@ -29,6 +29,7 @@
 #endregion
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using N2.Engine;
 using NHibernate;
@@ -36,38 +37,33 @@ using NHibernate.Criterion;
 
 namespace N2.Persistence.NH
 {
-	[Service(typeof(IRepository<int, ContentItem>), Key = "n2.repository.ContentItem")]
-	public class ContentItemRepository : NHRepository<int, ContentItem>
+	[Obsolete("Use NHRepository<TEntity>")]
+	[Service(typeof(IRepository<,>), Key = "n2.repository.generic2")]
+	public class NHRepository<TKey, TEntity> : NHRepository<TEntity>, IRepository<int, TEntity> where TEntity : class
 	{
-		public ContentItemRepository(ISessionProvider sessionProvider)
+		public NHRepository(ISessionProvider sessionProvider)
 			: base(sessionProvider)
 		{
 		}
 
-		public override ContentItem Get(int id)
+		#region IRepository<int,TEntity> Members
+
+		public TEntity Get(int id)
 		{
-			if (id == 0) return null;
-			return SessionProvider.OpenSession.Session.Get<ContentItem>(id);
+			return base.Get(id);
 		}
 
-		public override T Get<T>(int id)
+		public T Get<T>(int id)
 		{
-			if (id == 0) return default(T);
-			return SessionProvider.OpenSession.Session.Get<T>(id);
+			return base.Get<T>(id);
 		}
 
-		ICriteria GetContentItemCriteria()
-		{
-			return SessionProvider.OpenSession.Session.CreateCriteria(typeof (ContentItem), "ci")
-				.SetFetchMode("ci.Children", FetchMode.Eager)
-				.SetFetchMode("ci.Details", FetchMode.Eager)
-				.SetFetchMode("ci.DetailCollections", FetchMode.Eager);
-		}
+		#endregion
 	}
 
-	[Service(typeof(IRepository<,>), Key = "n2.repository.generic")]
-	[Service(typeof(INHRepository<,>), Key = "n2.nhrepository.generic")]
-	public class NHRepository<TKey, TEntity> : INHRepository<TKey, TEntity> where TEntity : class 
+	[Service(typeof(IRepository<>), Key = "n2.repository.generic")]
+	[Service(typeof(INHRepository<>), Key = "n2.nhrepository.generic")]
+	public class NHRepository<TEntity> : INHRepository<TEntity> where TEntity : class 
 	{
 		private ISessionProvider sessionProvider;
 
@@ -96,7 +92,7 @@ namespace N2.Persistence.NH
 		/// </summary>
 		/// <param name="id">The entity's id</param>
 		/// <returns>Either the entity that matches the id, or a null</returns>
-		public virtual TEntity Get(TKey id)
+		public virtual TEntity Get(object id)
 		{
 			return sessionProvider.OpenSession.Session.Get<TEntity>(id);
 		}
@@ -108,7 +104,7 @@ namespace N2.Persistence.NH
 		/// <param name="id">The entity's id</param>
 		/// <typeparam name="T">The type of entity to get.</typeparam>
 		/// <returns>Either the entity that matches the id, or a null</returns>
-		public virtual T Get<T>(TKey id)
+		public virtual T Get<T>(object id)
 		{
 			return sessionProvider.OpenSession.Session.Get<T>(id);
 		}
@@ -120,7 +116,7 @@ namespace N2.Persistence.NH
 		/// </summary>
 		/// <param name="id">The entity's id</param>
 		/// <returns>The entity that matches the id</returns>
-		public TEntity Load(TKey id)
+		public TEntity Load(object id)
 		{
 			return sessionProvider.OpenSession.Session.Load<TEntity>(id);
 		}
@@ -173,12 +169,27 @@ namespace N2.Persistence.NH
 		/// <returns>Entities with matching values.</returns>
 		public IEnumerable<TEntity> Find(string propertyName, object value)
 		{
-			if (value == null)
-				return FindAll(Expression.IsNull(propertyName));
-			if(value is string)
-				return FindAll(Expression.Like(propertyName, value));
+			return FindAll(CreateExpression(propertyName, value));
+		}
 
-			return FindAll(Expression.Eq(propertyName, value));
+		/// <summary>
+		/// Finds entitities from the persistance store with matching property values.
+		/// </summary>
+		/// <param name="propertyValuesToMatchAll">The property-value combinations to match. All these combinations must be equal for a result to be returned.</param>
+		/// <returns>Entities with matching values.</returns>
+		public IEnumerable<TEntity> Find(params Parameter[] propertyValuesToMatchAll)
+		{
+			return FindAll(propertyValuesToMatchAll.Select(kvp => CreateExpression(kvp.Name, kvp.Value)).ToArray());
+		}
+
+		private static ICriterion CreateExpression(string propertyName, object value)
+		{
+			if (value == null)
+				return Expression.IsNull(propertyName);
+			if (value is string)
+				return Expression.Like(propertyName, value);
+
+			return Expression.Eq(propertyName, value);
 		}
 
 		/// <summary>
@@ -215,7 +226,7 @@ namespace N2.Persistence.NH
 		/// <returns>A disposable transaction wrapper.</returns>
 		public ITransaction BeginTransaction()
 		{
-			return new NHTransaction(sessionProvider);
+			return sessionProvider.BeginTransaction();
 		}
 		#endregion
 
@@ -367,5 +378,6 @@ namespace N2.Persistence.NH
 		}
 
 		#endregion
+
 	}
 }

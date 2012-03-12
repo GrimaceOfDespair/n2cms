@@ -3,12 +3,44 @@ using System.Linq;
 using System.Diagnostics;
 using N2.Tests.Persistence.Definitions;
 using NUnit.Framework;
+using Shouldly;
 
 namespace N2.Tests.Persistence.NH
 {
 	[TestFixture]
 	public class PersisterTests : PersisterTestsBase
 	{
+		[Test]
+		public void VersionOf_MayBeAccessed()
+		{
+			var item = CreateOneItem<Definitions.PersistableItem1>(0, "item1", null);
+			var item2 = CreateOneItem<Definitions.PersistableItem1>(0, "item2", null);
+			persister.Save(item);
+			item2.VersionOf = item;
+			persister.Save(item2);
+
+			persister.Dispose();
+
+			var loaded = persister.Get(item2.ID);
+			loaded.VersionOf.Value.ID.ShouldBe(item.ID);
+		}
+
+
+		[Test]
+		public void DeletingItem_DeletesVersion()
+		{
+			var item = CreateOneItem<Definitions.PersistableItem1>(0, "item1", null);
+			var item2 = CreateOneItem<Definitions.PersistableItem1>(0, "item2", null);
+			persister.Save(item);
+			item2.VersionOf = item;
+			persister.Save(item2);
+
+			persister.Delete(item);
+
+			var loaded = persister.Get(item2.ID);
+			loaded.ShouldBe(null);
+		}
+
 		[Test]
 		public void Save_AssignsID()
 		{
@@ -528,12 +560,12 @@ namespace N2.Tests.Persistence.NH
 					var temp = item.Children[0]; // initilze
 				}
 
-				var first = item.Children.FindRange(0, 1);
-				var second = item.Children.FindRange(1, 1);
-				var third = item.Children.FindRange(2, 1);
-				var none = item.Children.FindRange(3, 1);
-				var beginning = item.Children.FindRange(0, 2);
-				var ending = item.Children.FindRange(2, 2);
+				var first = item.Children.FindRange(0, 1).ToList();
+				var second = item.Children.FindRange(1, 1).ToList();
+				var third = item.Children.FindRange(2, 1).ToList();
+				var none = item.Children.FindRange(3, 1).ToList();
+				var beginning = item.Children.FindRange(0, 2).ToList();
+				var ending = item.Children.FindRange(2, 2).ToList();
 
 				Assert.That(first.Single(), Is.EqualTo(child1));
 				Assert.That(second.Single(), Is.EqualTo(child2));
@@ -580,10 +612,10 @@ namespace N2.Tests.Persistence.NH
 				var third = item.Children.FindParts("Third");
 
 				Assert.That(nozone.Single(), Is.EqualTo(child3));
-				Assert.That(emptyzone.Count, Is.EqualTo(0));
+				Assert.That(emptyzone.Count(), Is.EqualTo(0));
 				Assert.That(first.Single(), Is.EqualTo(child1));
 				Assert.That(second.Single(), Is.EqualTo(child2));
-				Assert.That(third.Count, Is.EqualTo(0));
+				Assert.That(third.Count(), Is.EqualTo(0));
 			}
 		}
 
@@ -613,7 +645,7 @@ namespace N2.Tests.Persistence.NH
 
 				var zones = item.Children.FindZoneNames();
 
-				Assert.That(zones.Count, Is.EqualTo(2));
+				Assert.That(zones.Count(), Is.EqualTo(2));
 				Assert.That(zones.Contains(null));
 				Assert.That(zones.Contains("TheZone"));
 			}
