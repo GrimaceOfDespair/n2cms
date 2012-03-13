@@ -190,6 +190,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>WheelChair.nl.resx</DependentUpon>
     </Compile>
+    <Compile Include="Dinamico\Controllers\EventsController.cs" />
     <Compile Include="Dinamico\Defaults.cs" />
     <Compile Include="Dinamico\Controllers\MembershipController.cs" />
     <Compile Include="Dinamico\Controllers\ContentPartsController.cs" />
@@ -234,17 +235,6 @@
     <Compile Include="Util\IHolidayProvider.cs" />
     <Compile Include="Util\StyledFieldSetContainer.cs" />
     <Compile Include="Util\UserSelectorAttribute.cs" />
-    <Compile Include="_N2\Web\Mvc\ContentWebViewPage.cs" />
-    <Compile Include="_N2\Web\Mvc\ContentWebViewPageOfT.cs" />
-    <Compile Include="_N2\Web\Mvc\HasValueHelper.cs" />
-    <Compile Include="_N2\Web\Mvc\DataHelper.cs" />
-    <Compile Include="_N2\Web\Mvc\DisplayHelper.cs" />
-    <Compile Include="_N2\Web\Mvc\DynamicContentHelper.cs" />
-    <Compile Include="_N2\Web\Mvc\HtmlBuildersInitializer.cs" />
-    <Compile Include="_N2\Web\Mvc\Html\HtmlExtensions.cs" />
-    <Compile Include="_N2\Web\Mvc\Html\ListTemplateOfT.cs" />
-    <Compile Include="_N2\Web\Mvc\Html\RenderExtensions.cs" />
-    <Compile Include="_N2\Web\Mvc\Html\TemplateOfT.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="apple-touch-icon.png" />
@@ -654,6 +644,11 @@
     <Content Include="App_GlobalResources\Strings.nl.resx">
       <Generator>GlobalResourceProxyGenerator</Generator>
       <LastGenOutput>Strings.nl.designer.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Dinamico\Themes\KVG\Views\Event\Index.cshtml">
+      <SubType>Code</SubType>
     </Content>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
