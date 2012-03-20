@@ -15,7 +15,7 @@ namespace N2.CrossLinks
     public class DynamicTypeMapRepository
     {
         private ModuleBuilder moduleBuilder;
-        private readonly Dictionary<Type, Type> typeMap = new Dictionary<Type, Type>();
+        private Dictionary<Type, Type> typeMap = new Dictionary<Type, Type>();
 
         protected virtual ModuleBuilder CreateModuleBuilder()
         {
@@ -35,12 +35,20 @@ namespace N2.CrossLinks
             }
         }
 
-        public Assembly Assembly
+        public Dictionary<Type, Type> TypeMap
         {
             get
             {
-                return ModuleBuilder.Assembly;
+                // Initialize modulebuilder (ugly)
+                var moduleBuilder = ModuleBuilder;
+
+                return typeMap;
             }
+        }
+
+        public Assembly Assembly
+        {
+            get { return ModuleBuilder.Assembly; }
         }
 
         public ModuleBuilder ModuleBuilder

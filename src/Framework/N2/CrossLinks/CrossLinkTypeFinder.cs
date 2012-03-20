@@ -20,28 +20,9 @@ namespace N2.CrossLinks
 
         public IList<Type> Find(Type requestedType)
         {
-            var types = new List<Type>();
-            foreach (var assembly in GetAssemblies())
-            {
-                try
-                {
-                    types.AddRange(assembly.GetTypes()
-                        .Where(requestedType.IsAssignableFrom));
-                }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    var loaderErrors = string.Empty;
-                    foreach (var loaderEx in ex.LoaderExceptions)
-                    {
-                        Trace.TraceError(loaderEx.ToString());
-                        loaderErrors += ", " + loaderEx.Message;
-                    }
-
-                    throw new N2Exception("Error getting types from assembly " + assembly.FullName + loaderErrors, ex);
-                }
-            }
-
-            return types;
+            return typeMap.TypeMap.Values
+                .Where(requestedType.IsAssignableFrom)
+                .ToList();
         }
 
         public IList<Assembly> GetAssemblies()
