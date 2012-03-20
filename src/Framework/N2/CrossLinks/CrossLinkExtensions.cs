@@ -27,6 +27,7 @@ namespace N2.CrossLinks
             var crossLink = (ContentItem)Activator.CreateInstance(crossLinkType);
             crossLink.Title = childItem.Title;
             crossLink.ZoneName = ExpressionHelper.GetExpressionText(expression);
+            crossLink.SetDetail("ContentItem", childItem);
 
             return crossLink;
         }
