@@ -24,6 +24,8 @@
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <OldToolsVersion>3.5</OldToolsVersion>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -36,10 +38,8 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <OldToolsVersion>3.5</OldToolsVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -112,6 +112,7 @@
     <Compile Include="Collections\ContentListOfT.cs" />
     <Compile Include="Collections\AccessiblePageFilter.cs" />
     <Compile Include="Collections\AnyFilter.cs" />
+    <Compile Include="Collections\CrossLinkFilter.cs" />
     <Compile Include="Collections\StateFilter.cs" />
     <Compile Include="Collections\PartFilter.cs" />
     <Compile Include="Collections\ParallelRootHierarchyBuilder.cs" />
@@ -146,6 +147,12 @@
     <Compile Include="Configuration\VppElement.cs" />
     <Compile Include="Configuration\ZipVppElement.cs" />
     <Compile Include="Configuration\ZipVppCollection.cs" />
+    <Compile Include="CrossLinks\CrossLink.cs" />
+    <Compile Include="CrossLinks\CrossLinkDefinitionProvider.cs" />
+    <Compile Include="CrossLinks\CrossLinkExtensions.cs" />
+    <Compile Include="CrossLinks\CrossLinkDefinitionBuilder.cs" />
+    <Compile Include="CrossLinks\CrossLinkTypeFinder.cs" />
+    <Compile Include="CrossLinks\EditableCrossLinksAttribute.cs" />
     <Compile Include="Definitions\DefinitionExtensions.cs" />
     <Compile Include="Definitions\IActiveChildren.cs" />
     <Compile Include="Definitions\IFileSystemFile.cs" />
