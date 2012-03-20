@@ -22,6 +22,7 @@ namespace N2.CrossLinks
             var typeFinder = Context.Current.Resolve<ITypeFinder>();
             var types = typeFinder.Find(typeof(ContentItem));
 
+            ModuleBuilder moduleBuilder;
             using (var assemblyPersister = AssemblyPersister.Create())
             {
                 foreach (var linkedType in MapTypes(types))
@@ -31,8 +32,16 @@ namespace N2.CrossLinks
                         linkedType.LinkedType.Name + "Link");
                 }
 
-                return assemblyPersister.ModuleBuilder;
+                //return assemblyPersister.ModuleBuilder;
+                moduleBuilder = assemblyPersister.ModuleBuilder;
             }
+
+            foreach (var type in typeMap.Keys.ToList())
+            {
+                typeMap[type] = Type.GetType(typeMap[type].AssemblyQualifiedName);
+            }
+
+            return moduleBuilder;
         }
 
         public Dictionary<Type, Type> TypeMap

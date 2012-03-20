@@ -29,10 +29,10 @@ namespace N2.Tests.Persistence.NH
 
             var parentItemFromDb = engine.Persister.Get<ParentItem>(parentItem.ID);
 
-            Assert.That(parentItemFromDb, Is.Not.Null);
-            Assert.That(parentItemFromDb.ChildItems, Is.Not.Null);
-            Assert.That(parentItemFromDb.ChildItems.Count, Is.EqualTo(1));
-            Assert.That(parentItemFromDb.ChildItems[0].Title, Is.EqualTo("child item"));
+            Assert.That(parentItemFromDb, Is.Not.Null, "Parent item was not found in database.");
+            Assert.That(parentItemFromDb.ChildItems, Is.Not.Null, "No child items were found in database.");
+            Assert.That(parentItemFromDb.ChildItems.Count, Is.EqualTo(1), "An invalid number of child items were retrieved.");
+            Assert.That(parentItemFromDb.ChildItems[0].Title, Is.EqualTo("child item"), "The child item was retrieved, but contains invalid data");
         }
 
         [Test]

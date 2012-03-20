@@ -10,7 +10,7 @@ namespace N2.Tests.Persistence.Definitions
     [PageDefinition]
     public class ParentItem : ContentItem
     {
-        [EditableCrossLinks(typeof(ChildItem))]
+        [EditableCrossLinks(typeof(ChildItem), "ChildItems")]
         public virtual IList<ChildItem> ChildItems
         {
             get { return this.GetCrossLinks<ChildItem>("ChildItems"); }

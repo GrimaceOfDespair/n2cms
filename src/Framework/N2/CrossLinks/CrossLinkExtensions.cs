@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Web.Mvc;
 using N2.Collections;
+using N2.Definitions;
 
 namespace N2.CrossLinks
 {
@@ -16,20 +17,39 @@ namespace N2.CrossLinks
                 new AccessFilter(),
                 new CrossLinkFilter<T>());
              
-            return children.OfType<T>().ToList();
+            return children.Select(c => (T)c.GetDetail("ContentItem")).ToList();
         }
 
         public static ContentItem AddCrossLink<TSource,TTarget>(this TSource parentItem, TTarget childItem, Expression<Func<TSource, IList<TTarget>>> expression)
             where TSource : ContentItem
             where TTarget : ContentItem
         {
-            var crossLinkType = Context.Current.Resolve<CrossLinkTypesRepository>().Get<TTarget>();
+            var crossLinkType = GetCrossLinkType<TTarget>();
             var crossLink = (ContentItem)Activator.CreateInstance(crossLinkType);
+
+            crossLink.Parent = parentItem;
             crossLink.Title = childItem.Title;
-            crossLink.ZoneName = ExpressionHelper.GetExpressionText(expression);
             crossLink.SetDetail("ContentItem", childItem);
 
+            var propertyName = ExpressionHelper.GetExpressionText(expression);
+            var editableCrossLinks = Context.Current.Resolve<AttributeExplorer>()
+                .Find<EditableCrossLinksAttribute>(typeof (TSource))
+                .Where(a =>
+                       a.Name == propertyName).First();
+
+            crossLink.ZoneName = editableCrossLinks.ChildZone;
+
             return crossLink;
+        }
+
+        public static Type GetCrossLinkType<T>()
+        {
+            return GetCrossLinkType(typeof(T));
+        }
+
+        public static Type GetCrossLinkType(this Type linkedType)
+        {
+            return Context.Current.Resolve<CrossLinkTypesRepository>().Get(linkedType);
         }
     }
 }
