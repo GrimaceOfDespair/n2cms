@@ -23,30 +23,12 @@ namespace N2.CrossLinks
             where TSource : ContentItem
             where TTarget : ContentItem
         {
-            var crossLinkType = typeof(TSource).GetCrossLinkType();
+            var crossLinkType = Context.Current.Resolve<CrossLinkTypesRepository>().Get<TTarget>();
             var crossLink = (ContentItem)Activator.CreateInstance(crossLinkType);
             crossLink.Title = childItem.Title;
             crossLink.ZoneName = ExpressionHelper.GetExpressionText(expression);
 
             return crossLink;
         }
-
-        public static Type GetCrossLinkType(this Type childType)
-        {
-            return typeof(CrossLink<>)
-                .MakeGenericType(childType);
-        }
-
-        //public static IEnumerable<Type> GetLinkType(this IEnumerable<Type> linkedTypes)
-        //{
-        //    return linkedTypes.Select(linkedType =>
-
-        //        linkedType.GetLinkType());
-        //}
-
-        //public static Type GetLinkType(this Type linkedType)
-        //{
-        //    return linkedType;
-        //}
     }
 }

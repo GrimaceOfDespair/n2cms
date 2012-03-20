@@ -1,13 +1,16 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using N2.Definitions;
+using N2.Definitions.Static;
 using N2.Engine;
 
 namespace N2.CrossLinks
 {
     [Service(typeof(IDefinitionProvider))]
-    class CrossLinkDefinitionProvider : IDefinitionProvider
+    public class CrossLinkDefinitionProvider : IDefinitionProvider
     {
-        CrossLinkDefinitionBuilder definitionBuilder;
+        private readonly CrossLinkDefinitionBuilder definitionBuilder;
 
         public CrossLinkDefinitionProvider(CrossLinkDefinitionBuilder definitionBuilder)
         {
@@ -18,5 +21,6 @@ namespace N2.CrossLinks
         {
             return definitionBuilder.GetDefinitions();
         }
+
     }
 }

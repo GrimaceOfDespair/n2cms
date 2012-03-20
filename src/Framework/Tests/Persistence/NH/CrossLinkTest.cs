@@ -19,7 +19,7 @@ namespace N2.Tests.Persistence.NH
         }
 
         [Test]
-        public void CrossLinkDefinitionGetsCreated()
+        public void CrossLinksArePersisted()
         {
             var childItem = CreateAndSaveItem<ChildItem>("child item", null);
             var parentItem = CreateAndSaveItem<ParentItem>("parent item", null);
@@ -33,6 +33,14 @@ namespace N2.Tests.Persistence.NH
             Assert.That(parentItemFromDb.ChildItems, Is.Not.Null);
             Assert.That(parentItemFromDb.ChildItems.Count, Is.EqualTo(1));
             Assert.That(parentItemFromDb.ChildItems[0].Title, Is.EqualTo("child item"));
+        }
+
+        [Test]
+        public void CrossLinkTypesAreCreated()
+        {
+            var crossLinkType = Context.Current.Resolve<CrossLinkTypesRepository>().Get<ChildItem>();
+            Assert.That(crossLinkType, Is.Not.Null);
+            Assert.That(crossLinkType.Name, Is.EqualTo("ChildItemLink"));
         }
 
         protected T CreateAndSaveItem<T>(string title, ContentItem parent) where T : ContentItem

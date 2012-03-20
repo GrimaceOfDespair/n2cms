@@ -90,7 +90,6 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Dinamico\Controllers\EventsController.cs" />
     <Compile Include="Dinamico\Defaults.cs" />
     <Compile Include="Dinamico\Controllers\MembershipController.cs" />
     <Compile Include="Dinamico\Controllers\ContentPartsController.cs" />

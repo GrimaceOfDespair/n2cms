@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using N2.Definitions;
@@ -10,28 +11,42 @@ namespace N2.CrossLinks
     [Service]
     public class CrossLinkTypeFinder : ITypeFinder
     {
-        private readonly AttributeExplorer _explorer;
-        private readonly ITypeFinder _typeFinder;
+        private readonly CrossLinkTypesRepository typeMap;
 
-        public CrossLinkTypeFinder(AttributeExplorer explorer, ITypeFinder typeFinder)
+        public CrossLinkTypeFinder(CrossLinkTypesRepository typeMap)
         {
-            _explorer = explorer;
-            _typeFinder = typeFinder;
+            this.typeMap = typeMap;
         }
 
         public IList<Type> Find(Type requestedType)
         {
-            var linkTypes = from type in _typeFinder.Find(requestedType)
-                        from editableCrossLink
-                            in _explorer.Find<EditableCrossLinksAttribute>(type)
-                            select editableCrossLink.LinkedType.GetCrossLinkType();
+            var types = new List<Type>();
+            foreach (var assembly in GetAssemblies())
+            {
+                try
+                {
+                    types.AddRange(assembly.GetTypes()
+                        .Where(requestedType.IsAssignableFrom));
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    var loaderErrors = string.Empty;
+                    foreach (var loaderEx in ex.LoaderExceptions)
+                    {
+                        Trace.TraceError(loaderEx.ToString());
+                        loaderErrors += ", " + loaderEx.Message;
+                    }
 
-            return linkTypes.ToList();
+                    throw new N2Exception("Error getting types from assembly " + assembly.FullName + loaderErrors, ex);
+                }
+            }
+
+            return types;
         }
 
         public IList<Assembly> GetAssemblies()
         {
-            return _typeFinder.GetAssemblies();
+            return new[] {typeMap.Assembly};
         }
     }
 }

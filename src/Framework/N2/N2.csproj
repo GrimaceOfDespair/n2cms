@@ -151,6 +151,8 @@
     <Compile Include="CrossLinks\CrossLinkDefinitionProvider.cs" />
     <Compile Include="CrossLinks\CrossLinkExtensions.cs" />
     <Compile Include="CrossLinks\CrossLinkDefinitionBuilder.cs" />
+    <Compile Include="CrossLinks\CrossLinkTypesRepository.cs" />
+    <Compile Include="CrossLinks\DynamicTypeMapRepository.cs" />
     <Compile Include="CrossLinks\CrossLinkTypeFinder.cs" />
     <Compile Include="CrossLinks\EditableCrossLinksAttribute.cs" />
     <Compile Include="Definitions\DefinitionExtensions.cs" />
