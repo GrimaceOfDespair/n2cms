@@ -41,7 +41,7 @@ namespace N2.Engine.Configuration
 			engine.Container.AddComponent("n2.classMappingGenerator", typeof(ClassMappingGenerator), typeof(ClassMappingGenerator));
 			engine.Container.AddComponent("n2.configurationBuilder", typeof(ConfigurationBuilder), typeof(ConfigurationBuilder));
 			engine.Container.AddComponent("n2.sessionFactorySource", typeof(IConfigurationBuilder), typeof(ConfigurationSource));
-			engine.Container.AddComponent("n2.itemNotifier", typeof(IItemNotifier), typeof(NHInterceptor));
+			engine.Container.AddComponent("n2.itemNotifier", typeof(IItemNotifier), typeof(ItemNotifier));
 			engine.Container.AddComponent("n2.interceptor", typeof(IInterceptor), typeof(NHInterceptor));
 			engine.Container.AddComponent("n2.sessionProvider", typeof(ISessionProvider), typeof(SessionProvider));
 			engine.Container.AddComponent("n2.repository", typeof(IRepository<>), typeof(NHRepository<>));
