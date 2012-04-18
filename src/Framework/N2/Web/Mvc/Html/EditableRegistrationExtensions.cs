@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using N2.Definitions.Runtime;
 using N2.Details;
 using N2.Integrity;
@@ -62,6 +63,21 @@ namespace N2.Web.Mvc.Html
 			protected override System.Web.UI.WebControls.ListItem[] GetListItems()
 			{
 				return ListItems;
+			}
+		}
+
+    public static EditableBuilder<EditableDetailCollectionAttribute> ListBox(this IContentRegistration registration, string name, Func<IEnumerable<ContentItem>> getContentItems)
+    {
+      return registration.RegisterEditable<EditableDetailCollectionAttribute>(new CustomListBoxAttribute() { Name = name, Title = name })
+        .Configure(e => ((CustomListBoxAttribute)e).ContentItemsGetter = getContentItems);
+    }
+
+    class CustomListBoxAttribute : EditableDetailCollectionAttribute
+		{
+      public Func<IEnumerable<ContentItem>> ContentItemsGetter { get; set; }
+      protected override Func<IEnumerable<ContentItem>> GetContentItemsGetter()
+			{
+        return ContentItemsGetter;
 			}
 		}
 

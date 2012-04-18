@@ -198,9 +198,7 @@
     <Compile Include="Linq\LinqTestsBase.cs" />
     <Compile Include="Linq\VanillaLinqingTests.cs" />
     <Compile Include="Persistence\ContentDependencyInjectorTests.cs" />
-    <Compile Include="Persistence\Definitions\CrossLinks.cs" />
     <Compile Include="Persistence\NH\ClonedProxiedItemsTest.cs" />
-    <Compile Include="Persistence\NH\CrossLinkTest.cs" />
     <Compile Include="Persistence\NH\PersisterLinksTests.cs" />
     <Compile Include="Persistence\Proxying\InterceptionFactoryTests.cs" />
     <Compile Include="Persistence\NH\TagsRepositoryTests.cs" />
