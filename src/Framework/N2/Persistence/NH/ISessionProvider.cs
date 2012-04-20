@@ -13,11 +13,15 @@ namespace N2.Persistence.NH
         /// <returns>A NHibernate session.</returns>
 		SessionContext OpenSession { get; }
 
+		/// <summary>Returns an already opened stateless session or creates and opens a new one and puts it in the current request.</summary>
+		/// <returns>A NHibernate session.</returns>
+		StatelessSessionContext OpenStatelessSession { get; }
+
 		/// <summary>Returns an already opened session or creates and opens a new one and puts it in the current request.</summary>
 		/// <returns>A NHibernate session.</returns>
 		ISessionFactory SessionFactory { get; }
 
-        /// <summary>Persists changes to disk.</summary>
+    	/// <summary>Persists changes to disk.</summary>
 		void Flush();
 
 		/// <summary>Begins a transaction.</summary>
@@ -28,4 +32,5 @@ namespace N2.Persistence.NH
 		/// <returns>A disposable transaction wrapper.</returns>
 		ITransaction GetTransaction();
 	}
+
 }

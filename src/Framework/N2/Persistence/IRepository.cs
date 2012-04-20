@@ -86,6 +86,13 @@ namespace N2.Persistence
 		void SaveOrUpdate(TEntity entity);
 
 		/// <summary>
+		/// Register the entities for save or update in the database when the unit of work
+		/// is completed. (INSERT or UPDATE)
+		/// </summary>
+		/// <param name="entities">the entities to save</param>
+		void BatchUpdate(IEnumerable<TEntity> entity);
+
+		/// <summary>
 		/// Check if any instance of the type exists
 		/// </summary>
 		/// <returns><c>true</c> if an instance is found; otherwise <c>false</c>.</returns>
@@ -107,6 +114,7 @@ namespace N2.Persistence
 		/// <summary>Gets an existing transaction or null if no transaction is running.</summary>
 		/// <returns>A disposable transaction wrapper.</returns>
 		ITransaction GetTransaction();
+
 	}
 
     /// <summary>

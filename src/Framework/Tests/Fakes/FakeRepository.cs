@@ -105,6 +105,11 @@ namespace N2.Tests.Fakes
 			database[GetKey(entity)] = entity;
 		}
 
+		public void BatchUpdate(IEnumerable<TEntity> entity)
+		{
+			throw new NotImplementedException();
+		}
+
 		public void SaveOrUpdate(TEntity entity)
 		{
 			lastOperation = "SaveOrUpdate(" + entity + ")";

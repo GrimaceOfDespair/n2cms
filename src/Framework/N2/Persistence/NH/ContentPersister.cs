@@ -80,6 +80,7 @@ namespace N2.Persistence.NH
 			}
 			else
 			{
+				IEnumerable<ContentItem> reorderedChildren = null;
 				using (ITransaction transaction = itemRepository.BeginTransaction())
 				{
 					// delay saved event until a previously initiated transcation is completed
@@ -91,7 +92,7 @@ namespace N2.Persistence.NH
 						item.Name = null;
 
 					item.AddTo(item.Parent);
-					EnsureSortOrder(item);
+					reorderedChildren = EnsureSortOrder(item);
 
 					itemRepository.SaveOrUpdate(item);
 					if (string.IsNullOrEmpty(item.Name))
@@ -102,22 +103,25 @@ namespace N2.Persistence.NH
 
 					transaction.Commit();
 				}
+
+				if (reorderedChildren != null)
+				{
+					itemRepository.BatchUpdate(reorderedChildren);
+				}
 			}
 		}
 
-		private void EnsureSortOrder(ContentItem unsavedItem)
+		private IEnumerable<ContentItem> EnsureSortOrder(ContentItem unsavedItem)
 		{
 			var parent = unsavedItem.Parent;
 			if (parent != null)
 			{
 				foreach (SortChildrenAttribute attribute in parent.GetContentType().GetCustomAttributes(typeof(SortChildrenAttribute), true))
 				{
-					foreach (ContentItem updatedItem in attribute.ReorderChildren(parent))
-					{
-						itemRepository.SaveOrUpdate(updatedItem);
-					}
+					return attribute.ReorderChildren(parent);
 				}
 			}
+			return null;
 		}
 
 		/// <summary>Deletes an item an all sub-items</summary>

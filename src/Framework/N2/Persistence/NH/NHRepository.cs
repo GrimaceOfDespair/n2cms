@@ -162,6 +162,16 @@ namespace N2.Persistence.NH
 		}
 
 		/// <summary>
+		/// Save the entities through a stateless sessions for optimal performance
+		/// </summary>
+		/// <param name="entities">the entity to save</param>
+		public void BatchUpdate(IEnumerable<TEntity> entities)
+		{
+			foreach (var entity in entities)
+				sessionProvider.OpenStatelessSession.Session.Update(entity);
+		}
+
+		/// <summary>
 		/// Finds entitities from the persistance store with matching property values.
 		/// </summary>
 		/// <param name="propertyName">The name of the property to search for.</param>
