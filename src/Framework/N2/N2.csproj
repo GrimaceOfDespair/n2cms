@@ -335,6 +335,7 @@
     <Compile Include="Web\Mvc\ContentController.cs" />
     <Compile Include="Web\Mvc\ContentControllerOfT.cs" />
     <Compile Include="Web\Mvc\ControllerContentHelper.cs" />
+    <Compile Include="Web\Mvc\Html\EditableRegistrationExtensions.cs" />
     <Compile Include="Web\Mvc\Html\HtmlExtensions.cs" />
     <Compile Include="Web\Mvc\MvcExtensions.cs" />
     <Compile Include="Web\Mvc\RouteCollectionExtensions.cs" />
@@ -394,7 +395,6 @@
     <Compile Include="Web\Mvc\Html\ContentItemExtensions.cs" />
     <Compile Include="Web\Mvc\Html\ControlPanelExtensions.cs" />
     <Compile Include="Definitions\Runtime\Builder.cs" />
-    <Compile Include="Web\Mvc\Html\EditableRegistrationExtensions.cs" />
     <Compile Include="Definitions\Runtime\EditableBuilder.cs" />
     <Compile Include="Web\Mvc\Html\EngineExnteions.cs" />
     <Compile Include="Web\Mvc\Html\RegistrationExtensions.cs" />
