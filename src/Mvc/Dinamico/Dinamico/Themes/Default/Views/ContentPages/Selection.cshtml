@@ -1,0 +1,31 @@
+﻿@using N2
+@model Dinamico.Models.ContentPage
+
+@{
+	Content.Define(re => 
+	{
+		re.Title = "Container";
+        re.ListBox("SelectFrom", () => Find.Items.Where.State.Eq(ContentState.Published).Select());
+        re.Add(new N2.Details.EditableDefinitionAttribute { Name = "ListingType", Title = "Listed type", TemplateSelection = true, RemovedTypes = new[] { typeof(N2.Definitions.ISystemNode) }, DefaultValue = "ContentPage/News" });
+	});
+}
+
+@Html.Partial("LayoutPartials/Content")
+@{ 
+	Content.Register.FreeText("NewsFooter", "News item footer").Help("Text displayed as footer for each news item");
+	Content.Register.RegisterDisplayable<N2.Details.DisplayableTokensAttribute>("NewsFooter");
+}
+
+@{
+    IEnumerable<ContentItem> items = Content.Current.Item.GetDetailCollection("SelectFrom", true).ToList<ContentItem>();
+	if (Content.Has.ListingType)
+	{
+		items = items.Where(Content.Is.Definition((string)Content.Data.ListingType));
+	}
+}
+@Html.Loop(items,
+	template: @<div class="list-item">
+		@Html.Partial("Partials/ContentLink", item.Data)
+	</div>,
+	wrapper: @<div class="list">@item.RenderContents()</div>,
+	empty: @<p>No items</p>)

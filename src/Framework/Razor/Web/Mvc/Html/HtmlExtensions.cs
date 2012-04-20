@@ -130,5 +130,25 @@ namespace N2.Web.Mvc.Html
 				separator: null,
 				empty: empty);
 		}
+
+        public static IHtmlString PageBodyClass(this HtmlHelper html)
+        {
+            var controllerName = (string)html.ViewContext.RouteData.Values["Controller"];
+            var action = (string)html.ViewContext.RouteData.Values["Action"];
+
+            if (string.IsNullOrEmpty(controllerName))
+            {
+                return new HtmlString("");
+            }
+            controllerName = controllerName.ToLower();
+
+            if (string.IsNullOrEmpty(action))
+            {
+                return new HtmlString(controllerName);
+            }
+            action = action.ToLower();
+
+            return new HtmlString(controllerName + "-" + action.ToLower());
+        }
 	}
 }

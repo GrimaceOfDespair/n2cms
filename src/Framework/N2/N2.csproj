@@ -24,6 +24,8 @@
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <OldToolsVersion>3.5</OldToolsVersion>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -36,10 +38,8 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <OldToolsVersion>3.5</OldToolsVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -162,6 +162,7 @@
     <Compile Include="Definitions\Runtime\ViewTemplateSource.cs" />
     <Compile Include="Definitions\AttributeTransformerBaseOfTIn.cs" />
     <Compile Include="Definitions\TransformerBaseOfTOut.cs" />
+    <Compile Include="Details\EditableDetailCollectionAttribute.cs" />
     <Compile Include="Details\EditableImageUploadAttribute.cs" />
     <Compile Include="Details\EditableFolderSelectionAttribute.cs" />
     <Compile Include="Details\EditableMediaUploadAttribute.cs" />
