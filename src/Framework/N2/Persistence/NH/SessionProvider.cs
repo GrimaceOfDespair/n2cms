@@ -17,6 +17,7 @@ namespace N2.Persistence.NH
 		private readonly ILog logger = LogManager.GetLogger(typeof(SessionProvider));
 
 		private static string SessionKey = "SessionProvider.Session";
+		private static string StatelessSessionKey = "SessionProvider.StatelessSession";
 		private NHInterceptorFactory interceptorFactory;
 		private readonly IWebContext webContext;
 		private readonly ISessionFactory nhSessionFactory;
@@ -45,6 +46,13 @@ namespace N2.Persistence.NH
 			set { webContext.RequestItems[SessionKey] = value; }
 		}
 
+		/// <summary>Gets an existing session context or null if no session is in progress.</summary>
+		public virtual StatelessSessionContext CurrentStatelessSession
+		{
+			get { return webContext.RequestItems[StatelessSessionKey] as StatelessSessionContext; }
+			set { webContext.RequestItems[StatelessSessionKey] = value; }
+		}
+
         public FlushMode FlushAt
         {
             get { return flushAt; }
@@ -66,6 +74,20 @@ namespace N2.Persistence.NH
             }
 		}
 
+		public virtual StatelessSessionContext OpenStatelessSession
+		{
+            get
+            {
+							StatelessSessionContext sc = CurrentStatelessSession;
+                if(sc == null)
+                {
+					IStatelessSession s = nhSessionFactory.OpenStatelessSession();
+                    CurrentStatelessSession = sc = new StatelessSessionContext(this, s);
+                }
+                return sc;
+            }
+		}
+
 	    public virtual void Flush()
 		{
             SessionContext sc = CurrentSession;
@@ -82,6 +104,14 @@ namespace N2.Persistence.NH
             {
                 sc.Session.Dispose();
                 CurrentSession = null;
+            }
+
+            StatelessSessionContext ssc = CurrentStatelessSession;
+
+            if (ssc != null)
+            {
+                ssc.Session.Dispose();
+                CurrentStatelessSession = null;
             }
         }
 
