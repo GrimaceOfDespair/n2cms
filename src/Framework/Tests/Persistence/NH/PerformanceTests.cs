@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using N2.Definitions.Static;
 using N2.Persistence;
 using N2.Persistence.Finder;
@@ -20,6 +21,12 @@ namespace N2.Tests.Persistence.NH
 		ContentItem item1;
 		ContentItem item2;
 		ContentItem item3;
+		ContentItem item1_a;
+		ContentItem item1_b;
+		ContentItem item1_c;
+		ContentItem item2_a;
+		ContentItem item2_b;
+		ContentItem item2_c;
 
 		[SetUp]
 		public override void SetUp()
@@ -29,9 +36,22 @@ namespace N2.Tests.Persistence.NH
 			CreateRootItem();
 			SaveVersionAndUpdateRootItem();
 			CreateStartPageBelow(rootItem);
+
 			item1 = CreatePageBelow(startPage, 1);
+			item1.SortOrder = 10;
+
 			item2 = CreatePageBelow(startPage, 2);
+			item2.SortOrder = 30;
+
 			item3 = CreatePageBelow(startPage, 3);
+			item3.SortOrder = 20;
+
+			item1_a = CreatePageBelow(item1, 1);
+			item1_b = CreatePageBelow(item1, 2);
+			item1_c = CreatePageBelow(item1, 3);
+			item2_a = CreatePageBelow(item2, 1);
+			item2_b = CreatePageBelow(item2, 2);
+			item2_c = CreatePageBelow(item2, 3);
 
 			engine.Resolve<IHost>().DefaultSite.RootItemID = rootItem.ID;
 			engine.Resolve<IHost>().DefaultSite.StartPageID = startPage.ID;
@@ -48,7 +68,7 @@ namespace N2.Tests.Persistence.NH
 		{
 			var items = finder.Where.Type.Eq(typeof(PersistableItem2))
 				.Select<PersistableItem2>();
-			Assert.AreEqual(3, items.Count);
+			Assert.AreEqual(9, items.Count);
 			EnumerableAssert.Contains(items, item1);
 			EnumerableAssert.Contains(items, item2);
 			EnumerableAssert.Contains(items, item3);
@@ -56,6 +76,27 @@ namespace N2.Tests.Persistence.NH
 			// TODO: check why increase
 			Assert.That(sessionProvider.SessionFactory.Statistics.QueryExecutionCount, Is.LessThanOrEqualTo(2));
 			Assert.That(sessionProvider.SessionFactory.Statistics.GetEntityStatistics("PersistableItem2").FetchCount, Is.EqualTo(0));
+		}
+
+		[Test]
+		public void ChildSorting()
+		{
+			HibernatingRhinos.Profiler.Appender.NHibernate.NHibernateProfiler.Initialize();
+
+			// Load items into second-level cache
+			engine.Persister.Get(item1_a.ID);
+			var selectedItem = engine.Persister.Get(item1_b.ID);
+			engine.Persister.Get(item1_c.ID);
+			var item1Children = finder.Where.Parent.Eq(item1).Select<PersistableItem2>().ToList();
+
+			// Put one of the loaded items into the DetailCollection
+			var changeItem = engine.Persister.Get(item2_b.ID);
+			changeItem.Title = "Changed Item";
+			changeItem.GetDetailCollection("SelectedItem", true).Add(selectedItem);
+			engine.Persister.Save(changeItem);
+
+			// Verify performance
+			Assert.That(sessionProvider.SessionFactory.Statistics.QueryExecutionCount, Is.LessThanOrEqualTo(3));
 		}
 
 		#region Helpers
