@@ -10,8 +10,10 @@ namespace N2.Security
 		Write = 2,
 		Publish = 4,
 		Administer = 8,
+    AddTo = 16,
+    DeleteFrom = 32,
 		ReadWrite = Read | Write,
 		ReadWritePublish = Read | Write | Publish,
-		Full = Read | Write | Publish | Administer
+		Full = Read | Write | Publish | Administer | AddTo | DeleteFrom
 	}
 }

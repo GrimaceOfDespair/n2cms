@@ -42,7 +42,9 @@ namespace N2.Edit.Web.UI.Controls
 					.FirstOrDefault();
 
 			var item = new SelectionUtility(this, Page.GetEngine()).SelectedItem;
-			if (!Page.GetEngine().SecurityManager.IsAuthorized(Page.User, item, RequiredPermission))
+			var securityManager = Page.GetEngine().SecurityManager;
+			if (!securityManager.IsAuthorized(Page.User, item, RequiredPermission) ||
+				(item.ID != 0 && item.Parent != null && !securityManager.IsAuthorized(Page.User, item.Parent, Permission.AddTo)))
 			{
 				cv.IsValid = false;
 				cv.RenderControl(writer);

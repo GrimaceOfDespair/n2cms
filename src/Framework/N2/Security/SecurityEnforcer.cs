@@ -93,9 +93,14 @@ namespace N2.Security
 		/// <param name="item">The item that is to be saved.</param>
 		protected virtual void OnItemSaving(ContentItem item)
 		{
-			if (!security.IsAuthorized(item, this.webContext.User))
-				throw new PermissionDeniedException(item, this.webContext.User);
-			IPrincipal user = this.webContext.User;
+			var user = webContext.User;
+
+			if (!security.IsAuthorized(item, user))
+				throw new PermissionDeniedException(item, user);
+
+			if (item.ID != 0 && item.Parent != null && !security.IsAuthorized(user, item.Parent, Permission.AddTo))
+				throw new PermissionDeniedException(item.Parent, user, Permission.AddTo);
+
 			if (user != null)
 				item.SavedBy = user.Identity.Name;
 			else
@@ -107,8 +112,13 @@ namespace N2.Security
 		/// <param name="destination">The destination for the item.</param>
 		protected virtual void OnItemMoving(ContentItem source, ContentItem destination)
 		{
-			if (!security.IsAuthorized(source, this.webContext.User) || !security.IsAuthorized(destination, this.webContext.User))
-				throw new PermissionDeniedException(source, this.webContext.User);
+			var user = webContext.User;
+
+			if (!security.IsAuthorized(source, user))
+				throw new PermissionDeniedException(source, user);
+
+			if (!security.IsAuthorized(user, destination, Permission.AddTo))
+				throw new PermissionDeniedException(destination, user);
 		}
 
 		/// <summary>Is invoked when an item is to be deleted.</summary>
@@ -118,6 +128,10 @@ namespace N2.Security
 			IPrincipal user = webContext.User;
 			if (!security.IsAuthorized(item, user))
 				throw new PermissionDeniedException(item, user);
+
+			var parent = item.Parent;
+			if (parent != null && !security.IsAuthorized(user, parent, Permission.DeleteFrom))
+				throw new PermissionDeniedException(item, user, Permission.DeleteFrom);
 		}
 
 		/// <summary>Is invoked when an item is to be copied.</summary>
@@ -125,9 +139,16 @@ namespace N2.Security
 		/// <param name="destination">The destination for the copied item.</param>
 		protected virtual void OnItemCopying(ContentItem source, ContentItem destination)
 		{
-			if (!security.IsAuthorized(source, this.webContext.User) || !security.IsAuthorized(destination, this.webContext.User))
-				throw new PermissionDeniedException(source, this.webContext.User);
+			var user = this.webContext.User;
+
+			if (!security.IsAuthorized(source, user) || !security.IsAuthorized(destination, user))
+				throw new PermissionDeniedException(source, user);
+
+			var sourceParent = source.Parent;
+			if (!security.IsAuthorized(user, sourceParent, Permission.DeleteFrom))
+				throw new PermissionDeniedException(source, user);
 		}
+
 		#endregion
 
 		#region IStartable Members

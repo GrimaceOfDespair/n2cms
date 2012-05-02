@@ -26,6 +26,14 @@ namespace N2.Security
 			this.item = item;
         }
 
+		public PermissionDeniedException(ContentItem item, IPrincipal user, Permission permission)
+			: base(401, "Permission denied")
+		{
+			this.user = user;
+			this.item = item;
+			this.permission = permission;
+		}
+
         public PermissionDeniedException(string message, PermissionDeniedException innerException)
             : base(401, message, innerException)
         {
@@ -36,6 +44,7 @@ namespace N2.Security
 		#region Private Members
 		private ContentItem item;
 		private IPrincipal user; 
+		private Permission permission; 
 		#endregion
 
 		#region Properties
@@ -49,6 +58,12 @@ namespace N2.Security
 		public ContentItem Item
 		{
 			get { return item; }
+		} 
+
+		/// <summary>Gets the permission that was not granted.</summary>
+		public Permission Permission
+		{
+			get { return permission; }
 		} 
 		#endregion
 	}

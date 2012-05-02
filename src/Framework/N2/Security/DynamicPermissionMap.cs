@@ -11,7 +11,7 @@ namespace N2.Security
 	/// </summary>
 	public class DynamicPermissionMap : PermissionMap
 	{
-		const int MaxPermission = (int)Permission.Administer;
+		const int MaxPermission = (int)Permission.DeleteFrom;
 		public const string AuthorizedRolesPrefix = "AuthorizedRoles_";
 
 

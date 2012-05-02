@@ -82,6 +82,8 @@ namespace N2.Tests.Security
 		[TestCase(Permission.Write)]
 		[TestCase(Permission.ReadWrite)]
 		[TestCase(Permission.Publish)]
+		[TestCase(Permission.AddTo)]
+		[TestCase(Permission.DeleteFrom)]
 		[TestCase(Permission.ReadWritePublish)]
 		[TestCase(Permission.Administer)]
 		[TestCase(Permission.Full)]
@@ -103,6 +105,8 @@ namespace N2.Tests.Security
 		[TestCase(Permission.Write)]
 		[TestCase(Permission.ReadWrite)]
 		[TestCase(Permission.Publish)]
+		[TestCase(Permission.AddTo)]
+		[TestCase(Permission.DeleteFrom)]
 		[TestCase(Permission.ReadWritePublish)]
 		[TestCase(Permission.Administer)]
 		[TestCase(Permission.Full)]
@@ -143,6 +147,8 @@ namespace N2.Tests.Security
 
 		[TestCase(Permission.Write)]
 		[TestCase(Permission.ReadWrite)]
+		[TestCase(Permission.AddTo)]
+		[TestCase(Permission.DeleteFrom)]
 		[TestCase(Permission.Publish)]
 		[TestCase(Permission.ReadWritePublish)]
 		[TestCase(Permission.Administer)]
@@ -167,6 +173,8 @@ namespace N2.Tests.Security
 			Assert.That(map.Authorizes(null, null, expectedPermission), Is.False);
 		}
 
+		[TestCase(Permission.AddTo)]
+		[TestCase(Permission.DeleteFrom)]
 		[TestCase(Permission.Publish)]
 		[TestCase(Permission.ReadWritePublish)]
 		[TestCase(Permission.Administer)]
@@ -181,6 +189,8 @@ namespace N2.Tests.Security
 
 		[TestCase(Permission.Write)]
 		[TestCase(Permission.ReadWrite)]
+		[TestCase(Permission.AddTo)]
+		[TestCase(Permission.DeleteFrom)]
 		[TestCase(Permission.Publish)]
 		[TestCase(Permission.ReadWritePublish)]
 		[TestCase(Permission.Administer)]
@@ -294,6 +304,8 @@ namespace N2.Tests.Security
 		[TestCase(Permission.Read)]
 		[TestCase(Permission.Write)]
 		[TestCase(Permission.ReadWrite)]
+		[TestCase(Permission.AddTo)]
+		[TestCase(Permission.DeleteFrom)]
 		[TestCase(Permission.Publish)]
 		[TestCase(Permission.ReadWritePublish)]
 		[TestCase(Permission.Administer)]

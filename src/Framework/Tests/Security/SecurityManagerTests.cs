@@ -488,6 +488,8 @@ namespace N2.Tests.Security
 		[TestCase(Permission.None)]
 		[TestCase(Permission.Read)]
 		[TestCase(Permission.Write)]
+		[TestCase(Permission.AddTo)]
+		[TestCase(Permission.DeleteFrom)]
 		[TestCase(Permission.Publish)]
 		[TestCase(Permission.Administer)]
 		[TestCase(Permission.ReadWrite)]
