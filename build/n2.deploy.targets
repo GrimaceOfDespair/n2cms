@@ -18,108 +18,90 @@
 		<Copy SourceFiles="@(Framework-EditFiles)" DestinationFolder="$(Framework-DeployFolder)\N2\%(RecursiveDir)" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(TextFiles)" DestinationFolder="$(Framework-DeployFolder)" />
 	</Target>
-
-	<Target Name="Library-NuGet" DependsOnTargets="Framework-Deploy">
+  
+	<Target Name="Library-NuGet">
 		<ItemGroup>
-			<nugetLibraryBinFiles Include="$(ManagementFolder)\bin\N2.dll;
-										   $(ManagementFolder)\bin\N2.pdb;
-										   $(ManagementFolder)\bin\N2.xml;"/>
+			<libraryNuspec Include="$(BuildFolder)\Nuget\Library\N2.Library.nuspec" />
 		</ItemGroup>
-		<Copy SourceFiles="@(nugetLibraryBinFiles)" DestinationFolder="$(Library-NugetFolder)\lib" />
-
-		<ItemGroup>
-			<libraryNugetIncludes Include="$(BuildFolder)\Nuget\Library\**\*" />
-		</ItemGroup>
-		<Copy SourceFiles="@(libraryNugetIncludes)" DestinationFolder="$(Library-NugetFolder)\%(RecursiveDir)" />
+		<Copy SourceFiles="@(libraryNuspec)" DestinationFolder="$(Library-NugetFolder)" />
 		<FileUpdate Files="$(Library-NugetFolder)\N2.Library.nuspec" Regex="{Version}" ReplacementText="$(Version)" />
 
-		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -OutputDirectory .." WorkingDirectory="$(Library-NugetFolder)\" />
+		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -Symbols -OutputDirectory .." WorkingDirectory="$(Library-NugetFolder)\" />
 	</Target>
 
 	<Target Name="SQLite-NuGet">
 		<ItemGroup>
-			<sqliteNugetIncludes Include="$(BuildFolder)\Nuget\SQLite\**\*" />
+			<sqliteNuspec Include="$(BuildFolder)\Nuget\SQLite\N2.SQLite.nuspec" />
 		</ItemGroup>
-		<Copy SourceFiles="@(sqliteNugetIncludes)" DestinationFolder="$(SQLite-NugetFolder)\%(RecursiveDir)" />
+		<Copy SourceFiles="@(sqliteNuspec)" DestinationFolder="$(SQLite-NugetFolder)" />
 		<FileUpdate Files="$(SQLite-NugetFolder)\N2.SQLite.nuspec" Regex="{Version}" ReplacementText="$(Version)" />
 
-		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -OutputDirectory .." WorkingDirectory="$(SQLite-NugetFolder)\" />
+		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -Symbols -OutputDirectory .." WorkingDirectory="$(SQLite-NugetFolder)\" />
 	</Target>
 
 	<Target Name="Windsor2-NuGet">
 		<ItemGroup>
-			<windsor2NugetBinaries Include="$(SrcFolder)\Framework\IoC.Windsor2\bin\$(Configuration)\N2.IoC.Windsor2.dll;"/>
-			<windsor2NugetIncludes Include="$(BuildFolder)\Nuget\IoC.Windsor2\**\*" />
+			<windsor2Nuspec Include="$(BuildFolder)\Nuget\IoC.Windsor2\N2.Windsor2.nuspec" />
 		</ItemGroup>
-		<Copy SourceFiles="@(windsor2NugetBinaries)" DestinationFolder="$(Windsor2-NugetFolder)\lib" />
-		<Copy SourceFiles="@(windsor2NugetIncludes)" DestinationFolder="$(Windsor2-NugetFolder)\%(RecursiveDir)" />
+		<Copy SourceFiles="@(windsor2Nuspec)" DestinationFolder="$(Windsor2-NugetFolder)" />
 		<FileUpdate Files="$(Windsor2-NugetFolder)\N2.Windsor2.nuspec" Regex="{Version}" ReplacementText="$(Version)" />
 
-		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -OutputDirectory .." WorkingDirectory="$(Windsor2-NugetFolder)\" />
+		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -Symbols -OutputDirectory .." WorkingDirectory="$(Windsor2-NugetFolder)\" />
 	</Target>
 
 	<Target Name="Windsor3-NuGet">
 		<ItemGroup>
-			<windsor3NugetBinaries Include="$(SrcFolder)\Framework\IoC.Windsor\bin\$(Configuration)\N2.IoC.Windsor3.dll;"/>
-			<windsor3NugetIncludes Include="$(BuildFolder)\Nuget\IoC.Windsor3\**\*" />
+			<windsor3Nuspec Include="$(BuildFolder)\Nuget\IoC.Windsor3\N2.Windsor3.nuspec" />
 		</ItemGroup>
-		<Copy SourceFiles="@(windsor3NugetBinaries)" DestinationFolder="$(Windsor3-NugetFolder)\lib" />
-		<Copy SourceFiles="@(windsor3NugetIncludes)" DestinationFolder="$(Windsor3-NugetFolder)\%(RecursiveDir)" />
+		<Copy SourceFiles="@(windsor3Nuspec)" DestinationFolder="$(Windsor3-NugetFolder)" />
 		<FileUpdate Files="$(Windsor3-NugetFolder)\N2.Windsor3.nuspec" Regex="{Version}" ReplacementText="$(Version)" />
 
-		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -OutputDirectory .." WorkingDirectory="$(Windsor3-NugetFolder)\" />
+		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -Symbols -OutputDirectory .." WorkingDirectory="$(Windsor3-NugetFolder)\" />
 	</Target>
 
 	<Target Name="Razor-NuGet">
 		<ItemGroup>
-			<razorNugetIncludes Include="$(BuildFolder)\Nuget\Razor\**\*" />
-			<nugetRazorBinFiles Include="$(SrcFolder)\Framework\Razor\bin\$(Configuration)\N2.Razor.*;" />
+			<razorNuspec Include="$(BuildFolder)\Nuget\Razor\N2.Razor.nuspec" />
 		</ItemGroup>
-		<Copy SourceFiles="@(razorNugetIncludes)" DestinationFolder="$(Razor-NugetFolder)\%(RecursiveDir)" />
-		<Copy SourceFiles="@(nugetRazorBinFiles)" DestinationFolder="$(Razor-NugetFolder)\lib\NET40" />
+		<Copy SourceFiles="@(razorNuspec)" DestinationFolder="$(Razor-NugetFolder)" />
 		<FileUpdate Files="$(Razor-NugetFolder)\N2.Razor.nuspec" Regex="{Version}" ReplacementText="$(Version)" />
 
-		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -OutputDirectory .." WorkingDirectory="$(Razor-NugetFolder)\" />
+		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -Symbols -OutputDirectory .." WorkingDirectory="$(Razor-NugetFolder)\" />
 	</Target>
 
-	<Target Name="Management-NuGet" DependsOnTargets="Framework-Deploy;Library-NuGet;SQLite-NuGet;Razor-NuGet">
+	<Target Name="Management-NuGet" DependsOnTargets="Library-NuGet;SQLite-NuGet;Razor-NuGet;Management-CreateZip">
 		<ItemGroup>
-			<nugetFrameworkBinFiles Include="$(ManagementFolder)\bin\N2*.dll;
-											 $(ManagementFolder)\bin\N2*.pdb;
-											 $(SrcFolder)\Framework\Packaging\bin\$(Configuration)\N2.Packaging.dll;
-											 $(LibFolder)\NHibernate.Caches.*.dll;"
-									Exclude="$(ManagementFolder)\bin\N2.???;
-											 $(ManagementFolder)\bin\N2.Security.*;
-											 $(ManagementFolder)\bin\N2.Templates.*;" />
+			<managementNuspec Include="$(BuildFolder)\Nuget\Management\N2.Management.nuspec" />
 		</ItemGroup>
-		<Copy SourceFiles="@(nugetFrameworkBinFiles)" DestinationFolder="$(Management-NugetFolder)\lib" />
-
-		<!-- Using DotNetZip since MSBuild Community Tasks Zip doesn't include directory entries -->
-		<Delete Files="$(Management-NugetFolder)\content\N2\N2.zip" Condition="Exists('$(Management-NugetFolder)\content\N2\N2.zip')" />
-		<Copy SourceFiles="$(Framework-DeployFolder)\N2\web.config"	DestinationFolder="$(Management-NugetFolder)\content\N2\" />
-		<Exec Command="$(BuildFolder)\lib\BuildSupport.exe ZipDirectory &quot;$(Management-NugetFolder)\content\N2\N2.zip&quot; &quot;$(Framework-DeployFolder)\N2&quot; &quot;N2&quot;" />
-
-		<ItemGroup>
-			<managementNugetIncludes Include="$(BuildFolder)\Nuget\Management\**\*" />
-		</ItemGroup>
-		<Copy SourceFiles="@(managementNugetIncludes)" DestinationFolder="$(Management-NugetFolder)\%(RecursiveDir)" />
+		<Copy SourceFiles="@(managementNuspec)" DestinationFolder="$(Management-NugetFolder)" />
 		<FileUpdate Files="$(Management-NugetFolder)\N2.Management.nuspec" Regex="{Version}" ReplacementText="$(Version)" />
 
-		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -OutputDirectory .." WorkingDirectory="$(Management-NugetFolder)\" />
+		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -Symbols -OutputDirectory .." WorkingDirectory="$(Management-NugetFolder)\" />
 	</Target>
 
-	<Target Name="Framework-NuGet" DependsOnTargets="Management-NuGet">
+	<Target Name="Framework-NuGet" DependsOnTargets="Management-NuGet;Framework-CreateTextFiles">
 		<ItemGroup>
-			<frameworkNugetIncludes Include="$(BuildFolder)\Nuget\Framework\**\*" />
+			<frameworkNuspec Include="$(BuildFolder)\Nuget\Framework\N2.Cms.nuspec" />
 		</ItemGroup>
-		<Copy SourceFiles="@(frameworkNugetIncludes)" DestinationFolder="$(Framework-NugetFolder)\%(RecursiveDir)" />
+		<Copy SourceFiles="@(frameworkNuspec)" DestinationFolder="$(Framework-NugetFolder)" />
 		<FileUpdate Files="$(Framework-NugetFolder)\N2.Cms.nuspec" Regex="{Version}" ReplacementText="$(Version)" />
 
-		<Copy SourceFiles="@(TextFiles)" DestinationFolder="$(Framework-NugetFolder)\Content\N2\" />
-
-		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -OutputDirectory .." WorkingDirectory="$(Framework-NugetFolder)\" />
+		<Exec Command="$(BuildFolder)\lib\NuGet.exe pack -Symbols -OutputDirectory .." WorkingDirectory="$(Framework-NugetFolder)\" />
 	</Target>
 
+	<Target Name="Management-CreateZip" DependsOnTargets="Framework-CreateItemGroups-EditFiles">
+		<!-- Using DotNetZip since MSBuild Community Tasks Zip doesn't include directory entries -->
+		<Copy SourceFiles="@(Framework-EditFiles)" DestinationFolder="$(Management-DeployFolder)\N2\%(RecursiveDir)" SkipUnchangedFiles="true" />
+		<Delete Files="$(Management-NugetFolder)\content\N2\N2.zip" Condition="Exists('$(Management-NugetFolder)\content\N2\N2.zip')" />
+		<Copy SourceFiles="$(Management-DeployFolder)\N2\web.config"	DestinationFolder="$(Management-NugetFolder)\content\N2\" />
+		<Exec Command="$(BuildFolder)\lib\BuildSupport.exe ZipDirectory &quot;$(Management-NugetFolder)\content\N2\N2.zip&quot; &quot;$(Management-DeployFolder)\N2&quot; &quot;N2&quot;" />
+  </Target>
+  
+	<Target Name="Framework-CreateTextFiles">
+    <Copy SourceFiles="@(TextFiles)" DestinationFolder="$(Framework-NugetFolder)\Content\N2\" />
+  </Target>
+
+  
 	<Target Name="Framework-ZipDeploy" DependsOnTargets="Framework-Deploy;Framework-Zip" />
 
 	<Target Name="Framework-Zip">
@@ -182,6 +164,6 @@
 			<nugetPackages Include="$(DeployFolder)\*.nupkg" />
 		</ItemGroup>
 		<!--<Message Text="$(BuildFolder)\lib\NuGet.exe Push %(nugetPackages.Identity)" />-->
-		<Exec Command="$(BuildFolder)\lib\NuGet.exe Push %(nugetPackages.Identity)" />
+		<Exec Command="$(BuildFolder)\lib\NuGet.exe Push %(nugetPackages.Identity) -s http://symbols.localhost/ sl4Hdp0mtwh0t" />
 	</Target>
 </Project>

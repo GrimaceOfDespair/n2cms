@@ -18,4 +18,9 @@
 			<dependency id="NHibernate" version="3.3.1.4000" />
 		</dependencies>
 	</metadata>
+  <files>
+    <file src="..\..\build\NuGet\Library\**\*.*" target="." />
+    <file src="..\..\src\Framework\N2\bin\Release\N2.*" target="lib\net20" />
+    <file src="..\..\src\Framework\N2\**\*.cs" target="src\Framework\N2" />
+  </files>
 </package>

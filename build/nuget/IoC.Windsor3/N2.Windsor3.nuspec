@@ -19,4 +19,9 @@
 			<dependency id="Castle.Windsor" version="3.1.0" />
 		</dependencies>
 	</metadata>
+  <files>
+    <file src="..\..\build\NuGet\IoC.Windsor3\**\*.*" target="." />
+    <file src="..\..\src\Framework\IoC.Windsor\bin\Release\N2.IoC.Windsor3.*" target="lib\net20" />
+    <file src="..\..\src\Framework\IoC.Windsor\**\*.cs" target="src\Framework\IoC.Windsor" />
+  </files>
 </package>

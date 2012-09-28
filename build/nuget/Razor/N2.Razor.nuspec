@@ -20,4 +20,9 @@
 			<dependency id="AspNetRazor.Core" version="2.0.20126.16343" />-->
 		</dependencies>
 	</metadata>
+  <files>
+    <file src="..\..\build\NuGet\Razor\**\*.*" target="." />
+    <file src="..\..\src\Framework\Razor\bin\Release\N2.Razor.*" target="lib\net40" />
+    <file src="..\..\src\Framework\Razor\**\*.cs" target="src\Framework\Razor" />
+  </files>
 </package>

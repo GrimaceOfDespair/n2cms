@@ -21,4 +21,15 @@
 			<dependency id="DotNetZip" version="1.9.1.8" />
 		</dependencies>
 	</metadata>
+  <files>
+    <file src="..\..\build\NuGet\Management\**\*.*" target="." />
+    <file src="content\N2\N2.zip" target="content\N2\" />
+    <file src="content\N2\web.config" target="content\N2\" />
+    <file src="..\..\src\Mvc\MvcTemplates\bin\N2.Management.*" target="lib\net20" />
+    <file src="..\..\src\Mvc\MvcTemplates\**\*.cs" target="src\Mvc\MvcTemplates" />
+    <file src="..\..\src\Framework\Extensions\bin\Release\N2.Extensions.*" target="lib\net20" />
+    <file src="..\..\src\Framework\Extensions\**\*.cs" target="src\Framework\Extensions" />
+    <file src="..\..\src\Framework\Packaging\bin\Release\N2.Packaging.dll" target="lib\net20" />
+    <file src="..\..\src\Framework\Packaging\**\*.cs" target="src\Framework\Packaging" />
+  </files>
 </package>

@@ -19,4 +19,8 @@
 			<dependency id="N2CMS.Management" version="{Version}" />
 		</dependencies>
 	</metadata>
+  <files>
+    <file src="..\..\build\NuGet\Framework\**\*.*" target="." />
+    <file src="content\N2\**\*.*" target="content\N2\" />
+  </files>
 </package>
